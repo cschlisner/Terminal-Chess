@@ -4,10 +4,20 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
-*	An object holding a boardstate. Each Board holds an array of 64 Tiles, any of which can be occupied by a Piece.  
+*	An object holding a boardstate. Each Board holds an array of 64 Tiles, any of which can be occupied by a Piece.
+*	A board state will never actually change. When performMove() is called a new board is generated with the new boardstate.
+*	This means that all information about this board (including legal moves, piece locations, etc) is in an artificial static state.
+*	<p> 
+*	Since all information about the board will never change, two lists of legal moves for each player is generated on creation. 
+*	These lists will be publicly acessable and unchanging so that no additional calculation will need to be done for the board. 
 */
 public class Board {
 	private Tile[][] state = new Tile[8][8];
+
+	private List<Move> legalWhiteMoves;
+	
+	private List<Move> legalBlackMoves;
+
 
 	/** Sets the orientation of the string representation of the board. */
 	public static boolean reversed;
@@ -31,10 +41,10 @@ public class Board {
    		int d = (color.equals(Game.Color.BLACK))?-1:1;
         Location org = (d>0)?new Location(0,0):new Location(7,7);
 
-        getTile(org.x+(d*0), org.y).setOccupator(new Piece(color, Game.PieceType.ROOK));
+        getTile(org.x, org.y).setOccupator(new Piece(color, Game.PieceType.ROOK));
         getTile(org.x+(d*7), org.y).setOccupator(new Piece(color, Game.PieceType.ROOK));
 
-        getTile(org.x+(d*1), org.y).setOccupator(new Piece(color, Game.PieceType.KNIGHT));
+        getTile(org.x+(d), org.y).setOccupator(new Piece(color, Game.PieceType.KNIGHT));
         getTile(org.x+(d*6), org.y).setOccupator(new Piece(color, Game.PieceType.KNIGHT));
 
        getTile(org.x+(d*2), org.y).setOccupator(new Piece(color, Game.PieceType.BISHOP));
@@ -98,7 +108,7 @@ public class Board {
 		StringBuilder res = new StringBuilder();
 		res.append(" ");
 		for (int x = 0; x<9; ++x){
-			if (x>0) res.append(COLDIM+(" ABCDEFGH".charAt((reversed)?9-x:x)));
+			if (x>0) res.append((" ABCDEFGH".charAt((reversed)?9-x:x)));
 			for (int k=0;k<(max-1);++k)	
 				res.append(" ");
 		}
@@ -121,9 +131,9 @@ public class Board {
 		int y = 8;
 		res.append("\n"+writeColumnLabels(max, reversed)+"\n");
 		if (!reversed){
-			for (Tile[] row : getBoardState()){
+			for (Board.Tile[] row : getBoardState()){
 				res.append(COLDIM+y+TERMCOL+" ");
-				for (Tile el : row){
+				for (Board.Tile el : row){
 					res.append(el);
 					for (int k=0;k<((max-String.valueOf(el).length()));++k)	
 						res.append("  ");
@@ -222,7 +232,7 @@ public class Board {
 		
 		switch (movingPiece.type){
 			case PAWN:
-				Piece enpasse = (dy + dx == 0 || dy + dx == 2) ? getTile(move.origin.x+dx, move.origin.y).getOccupator() : null;
+				Piece enpasse = (dy == 1 && (dy + dx == 0 || dy + dx == 2)) ? getTile(move.origin.x+dx, move.origin.y).getOccupator() : null;
 				move.PROMOTION = (move.destination.y == (movingPiece.color.equals(Game.Color.WHITE) ? 7 : 0));
 				if ((dy == 1 && dx == 0 && !enemy)
 					|| (movingPiece.moves.size()==0 && dy == 2 && dx == 0 && cardinalLineOfSightClear(move.origin, move.destination) && !enemy) 
@@ -298,6 +308,85 @@ public class Board {
 	}
 
 	/**
+	*	Determines whether a given player on a given board holds check.
+	*	
+	*	@param board The board to check on 
+	*	@param c The color of player to check for
+	*	@return Whether the player has check 	
+	*/
+	public static boolean playerHasCheck(Board board, Game.Color c){
+		Piece p;
+		for (Move m : board.getValidMoves(c)){
+			p = board.getTile(m.destination).getOccupator();
+			if (p != null && p.ofType(Game.PieceType.KING))
+				return true;
+		}
+		return false;
+	}
+
+	public static boolean playerHasCheck(Board board, Player player){
+		return Board.playerHasCheck(board, player.color);
+	}
+
+	/**
+	*	Gets a list of all valid moves for all pieces of a given color
+	* 
+	*	@param c The color to gather moves for
+	*	@return The list of moves
+	*/
+	public List<Move> calculateLegalMoves(Game.Color c){
+		List<Move> validMoves = getValidMoves(c);
+		List<Move> legalMoves = new ArrayList<>();
+
+		for (Move m : validMoves)
+			if (!Board.playerHasCheck(performMove(m), Game.getOpposite(c)))
+				legalMoves.add(m);
+
+		return legalMoves;
+	}
+
+	/**
+	*	Returns the list of legal moves for a given color if this method has been called before. 
+	*	Otherwise, it will generate the list and return it. 
+	* 
+	*	@param color The color to gather moves for
+	*	@return The list of moves
+	*/
+	public List<Move> getLegalMoves(Game.Color color){
+
+		List<Move> legal =  ((color.equals(Game.Color.BLACK) ? legalBlackMoves : legalWhiteMoves));
+
+		if (legal != null)
+			return legal;
+		
+		else legal = calculateLegalMoves(color);
+
+		return legal;
+	}
+
+	/**
+	*	Returns the list of legal moves for a given player
+	* 
+	*	@param player The Opponent of the Player to gather moves for
+	*	@return The list of moves
+	*/
+	public List<Move> getLegalMoves(Player player){
+		return getLegalMoves(player.color);
+	}
+
+	/**
+	*	Returns the list of legal moves for a given player's opponent
+	* 
+	*	@param player The Opponent of the Player to gather moves for
+	*	@return The list of moves
+	*/
+	public List<Move> getOpponentLegalMoves(Player player){
+		return getLegalMoves(Game.getOpposite(player.color));
+	}
+
+
+
+	/**
 	*	Performs a given move, as well as any additional actions associated with a
 	*	special move type such as En Passent moves, Castling, and Pawn promotion. 
 	*	
@@ -343,7 +432,7 @@ public class Board {
 	public class Tile {
 		private Piece occupator = null;
 		private Location locale;
-		private Game.Color color;
+		public Game.Color color;
 
 		public Tile(Location loc){
 			locale = loc;

@@ -39,14 +39,13 @@ public class StrategyProcessorThread extends Thread {
     *   the game will have probably changed drastically by then and the current move should factor more into the
     *   final decision.
     *
-    *   @param moves The list of moves to process
     */
     public void run(){
         // System.out.println("start "+this.getName());
 
         switch(sm.movingPieceType){ 
             case PAWN:
-                AI_DEPTH = 5-cpuSave;
+                AI_DEPTH = 2-cpuSave;
                 AI_COMPLEXITY = 4-cpuSave; 
                 OPPONENT_COMPLEXITY = 4-cpuSave; 
                 break;
@@ -56,7 +55,7 @@ public class StrategyProcessorThread extends Thread {
                 OPPONENT_COMPLEXITY = 1; 
                 break;
             case KNIGHT:
-                AI_DEPTH = 3-cpuSave;
+                AI_DEPTH = 2-cpuSave;
                 AI_COMPLEXITY = 3-cpuSave; 
                 OPPONENT_COMPLEXITY = 2; 
                 break;
@@ -208,7 +207,7 @@ public class StrategyProcessorThread extends Thread {
 
         List<Move> res = new ArrayList<>();
         for (Move legal : sim2.getLegalMoves(chesster))
-            if (legal.origin.equals(m.destination))
+        //    if (legal.origin.equals(m.destination))
                 res.add(legal);
 
         return res;
@@ -259,7 +258,7 @@ public class StrategyProcessorThread extends Thread {
     *   starting from the most important and ending at the least. For example, a complexity of 2 would calculate
     *   discover and potential material, while a complexity of 3 would calculate discover, potential material, and skewer.
     *   
-    *   @param SmartMove to assign strategic value to
+    *   @param sm to assign strategic value to
     */
     private void processTacticalValue(SmartMove sm, Player p, int complexity){
         // flags for calculating result

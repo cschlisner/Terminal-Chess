@@ -23,19 +23,15 @@ public class Game extends AppCompatActivity {
 
         else chessGame = new uniChess.Game(whitePlayer, blackPlayer, menuIntent.getStringExtra("FRESH_MEMES"));
 
-        // display board
-
-        // get input and construct AN string
-
-        // advance game
+        setContentView(R.layout.activity_game);
     }
 
     private void gameAdvance(){
 
         displayBoard(chessGame.getCurrentBoard());
 
-        while (){
-            uniChess.Game.GameEvent gameResponse = chessGame.advance(moveString);
+        while (true){
+            uniChess.Game.GameEvent gameResponse = chessGame.advance("ayylmao");
 
             switch(gameResponse){
 

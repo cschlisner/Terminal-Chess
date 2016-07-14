@@ -3,4 +3,10 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
+    <color name="chessBoardDark">#33271e</color>
+    <color name="chessBoardLight">#5e2c00</color>
+    <color name="chessBoardHighlight">#00740c</color>
+    <color name="chessBoardCapture">#ff0022</color>
+    <color name="chessPiecesDark">#000000</color>
+    <color name="chessPiecesLight">#ffffff</color>
 </resources>

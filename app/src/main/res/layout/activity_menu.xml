@@ -17,4 +17,5 @@
         android:layout_marginTop="118dp"
         android:textStyle="italic"
         android:onClick="startNewGame" />
+
 </RelativeLayout>

@@ -6,7 +6,7 @@ import java.util.ArrayList;
 /**
 *	An object representing a replacement of one Tile in a Board object with another.
 */
-public class Move {
+public class Move{
     /**	Boolean flag for special move type.*/
 	public boolean ENPASSE, QCASTLE, KCASTLE, PROMOTION, CHECKMATE;
 
@@ -16,12 +16,42 @@ public class Move {
 	/**	Location of Tile to move piece to*/
 	public Location destination;
 	
-	public Board board;
+	public Board board, sim = null;
+
+	public Piece movingPiece;
+
+	/** Value of the piece this move would capture*/
+    public double materialValue;
+
 
 	public Move(Location a, Location b, Board bo){
 		origin = a;
 		destination = b;
 		board = bo;
+		movingPiece = bo.getTile(origin).getOccupator();
+	}
+
+	public Move(Move m){
+		this.ENPASSE = m.ENPASSE;
+		this.QCASTLE = m.QCASTLE;
+		this.KCASTLE = m.KCASTLE;
+		this.PROMOTION = m.PROMOTION;
+		this.CHECKMATE = m.CHECKMATE;
+		this.origin = m.origin;
+		this.destination = m.destination;
+		this.board = m.board;
+		this.sim = (m.sim!=null) ? m.sim : null;
+		this.movingPiece = m.movingPiece;
+		this.materialValue = m.materialValue;
+	}
+
+	public Board getSimulation(){
+		if (sim == null) sim = this.board.performMove(this);
+		return sim;
+	}
+
+	public boolean isSpecial(){
+		return (ENPASSE || QCASTLE || KCASTLE || PROMOTION || CHECKMATE);
 	}
 
 	@Override
@@ -44,10 +74,18 @@ public class Move {
 	*
 	**/
 	public static Move parseMove(Board board, Game.Color color, String in) throws GameException{
-    	if (in.length() == 2)
+    	if (in.equals("0-0"))
+    		in = (color.equals(Game.Color.BLACK) ? "kg8":"kg1");
+    	else if (in.equals("0-0-0"))
+    		in = (color.equals(Game.Color.BLACK) ? "kc8":"kc1");
+    	
+    	else if (in.length() == 2)
     		in = "p"+in;
     	
-    	String[] tokens = in.split("");
+    	String[] tokens = new String[in.length()];
+		for (int i = 0; i < in.length(); ++i)
+			tokens[i] = String.valueOf(in.charAt(i));
+
 		String pieceSymbol = tokens[0];
 
 		int rank = -1, file = -1;
@@ -108,23 +146,6 @@ public class Move {
 			throw new GameException(GameException.INVALID_MOVE, "Invalid move.");
 
 		if (potentialLocations.size() > 1){
-			// boolean specF=false, specR=false;
-			// for (Board.Tile t : potentialLocations){
-			// 	for (Board.Tile u : potentialLocations){
-			// 		if (t.getLocale().x != u.getLocale().x)
-			// 			specF = true;
-			// 		if (!specF && t.getLocale().y != u.getLocale().y)
-			// 			specR = true;
-			// 	}
-			// }
-
-			// String[] msg = new String[potentialLocations.size()+1];
-			// int i = 0;
-			// msg[i++] = "Ambiguous move. Options:";
-			// for (Board.Tile t : potentialLocations){
-			// 	Piece p = t.getOccupator();
-			// 	msg[i++] = String.format("%d. %s%s%s%s", i-1, p.getSymbol(true), (specF?t.getLocale().toString().charAt(0):""), (specR?t.getLocale().y:""), dest.toString());
-			// }
 			throw new GameException(GameException.AMBIGUOUS_MOVE, "yep");
 		}
 		return null;
@@ -134,40 +155,14 @@ public class Move {
 	*	@return A full algebraic notation representation of this move, including rank and file specifiers.	
 	*/
 	public String getANString(){
+		if (KCASTLE) return ("0-0");
+		if (QCASTLE) return ("0-0-0");
 		return String.format("%s%s%s", board.getTile(origin).getOccupator().getSymbol(false).toLowerCase(), origin, destination);
 	}
 
     @Override
 	public String toString(){
-		return String.format("%s > %s", board.getTile(origin).getOccupator(), destination);
+		return String.format("%s > %s%s", board.getTile(origin).getOccupator(), (materialValue>0 ? board.getTile(destination).getOccupator() : ""), destination);
 	}
 
-}
-
-class SmartMove extends Move implements Comparable<SmartMove>{
-
-        public double strategicValue;
-        public double tacticalValue;
-
-        public int materialValue;
-
-        public Game.PieceType movingPieceType;
-
-        public SmartMove(Move move){
-            super(move.origin, move.destination, move.board);
-
-            this.materialValue = getMaterialValue();
-
-            this.movingPieceType = this.board.getTile(origin).getOccupator().type;
-        }
-
-        private int getMaterialValue(){
-            return (this.board.getTile(destination).getOccupator() != null ? this.board.getTile(destination).getOccupator().value : 0);
-        }
-
-        @Override 
-        public int compareTo(SmartMove other){
-            if (this.CHECKMATE) return 1;
-            return (this.strategicValue > other.strategicValue) ? 1 : (this.strategicValue < other.strategicValue) ? -1 : 0;
-        }
 }

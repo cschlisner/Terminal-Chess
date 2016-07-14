@@ -10,16 +10,19 @@ import java.util.ArrayList;
 public class Game {
 
 	/** Type that the Game object will return on game advancement */
-	public static enum GameEvent {OK, AMBIGUOUS, INVALID, ILLEGAL, CHECK, CHECKMATE, STALEMATE, DRAW;}
+	public enum GameEvent {OK, AMBIGUOUS, INVALID, ILLEGAL, CHECK, CHECKMATE, STALEMATE, DRAW}
 	
 	/** Type of game pieces. */
-	public static enum PieceType {PAWN, ROOK, KNIGHT, BISHOP, QUEEN, KING;}
+	public enum PieceType {PAWN, ROOK, KNIGHT, BISHOP, QUEEN, KING}
 	
 	/** Colors */
-	public static enum Color {WHITE, BLACK;}
+	public enum Color {WHITE, BLACK}
 	
 	/** Enables unicode output in string representations. */
 	public static boolean unicode = true;
+
+	/** Restricts unicode characters to filled in type. */
+	public static boolean useDarkChars = false;
 	
 	private boolean whiteMove = true;
 
@@ -63,6 +66,7 @@ public class Game {
 			((Chesster)black).registerGame(this);
 
 		boards.add(new Board());
+		getCurrentBoard().processLegal();
 	}
 
 	/**
@@ -73,6 +77,7 @@ public class Game {
 	*	@return The game string
 	*/
 	public String getGameString(){
+		if (gameString.isEmpty()) return "";
 		return gameString.substring(0, gameString.length()-1);
 	}
 
@@ -175,10 +180,10 @@ public class Game {
 			if (!legal.contains(move))
 				return GameEvent.ILLEGAL;
 
-			boards.add(getCurrentBoard().performMove(move));
+			boards.add(move.getSimulation());
+			getCurrentBoard().processLegal();
 
 			whiteMove = !whiteMove;
-			Board.reversed = !whiteMove;
 
 			gameString += move.getANString()+",";
 

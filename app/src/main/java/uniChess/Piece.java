@@ -7,6 +7,7 @@ import java.util.ArrayList;
 *	An object representing a chess piece. Pieces hold histories of locations they have been moved to.  
 */
 public class Piece {
+
 	/**	The Color of the Piece*/
 	public Game.Color color;
 	
@@ -22,10 +23,13 @@ public class Piece {
 	public Game.PieceType type;
 	
 	/** The material value of this piece.*/
-	public int value;
+	public double value;
 
 	/**	The list of locations that this piece has moved to*/
 	public List<Location> moves;
+
+	/** Indicates whether this piece is uner attack*/
+	public Move attackingMove = null;
 
 	public Piece(Piece other){
 		this(other.color, other.type);
@@ -36,40 +40,46 @@ public class Piece {
 		this.type = type;
 		this.color = c;
 		this.moves = new ArrayList<>();
+
+		int[] unicodeChars;
+
+		if (color.equals(Game.Color.BLACK) || Game.useDarkChars)
+			unicodeChars = new int[]{9823,9820,9822,9821,9819,9818};
+		else unicodeChars = new int[]{9817,9814,9816,9815,9813,9812};
+
 		switch(type){
 			case PAWN:
-				this.value = 2;
+				this.value = 2.0;
 				this.symbol = "P";
-				this.unicodeSymbol = new String(Character.toChars(color.equals(Game.Color.BLACK)?9823:9817)); 
+				this.unicodeSymbol = new String(Character.toChars(unicodeChars[0])); 
 				break;
 			case ROOK:
-				this.value = 10;
+				this.value = 6.0;
 				this.symbol = "R";
-				this.unicodeSymbol = new String(Character.toChars(color.equals(Game.Color.BLACK)?9820:9814));
+				this.unicodeSymbol = new String(Character.toChars(unicodeChars[1]));
 				
 				break;
 			case KNIGHT:
-				this.value = 6;
+				this.value = 4.0;
 				this.symbol = "N";
-				this.unicodeSymbol = new String(Character.toChars(color.equals(Game.Color.BLACK)?9822:9816));
+				this.unicodeSymbol = new String(Character.toChars(unicodeChars[2]));
 				
 				break;
 			case BISHOP:
-				this.value = 6;
+				this.value = 4.0;
 				this.symbol = "B";
-				this.unicodeSymbol = new String(Character.toChars(color.equals(Game.Color.BLACK)?9821:9815));
-				
+				this.unicodeSymbol = new String(Character.toChars(unicodeChars[3]));
 				break;
 			case QUEEN:
-				this.value = 18;
+				this.value = 10.0;
 				this.symbol = "Q";
-				this.unicodeSymbol = new String(Character.toChars(color.equals(Game.Color.BLACK)?9819:9813));
+				this.unicodeSymbol = new String(Character.toChars(unicodeChars[4]));
 				
 				break;
 			case KING:	
-				this.value = 20;
+				this.value = 200.0;
 				this.symbol = "K";
-				this.unicodeSymbol = new String(Character.toChars(color.equals(Game.Color.BLACK)?9818:9812));
+				this.unicodeSymbol = new String(Character.toChars(unicodeChars[5]));
 				
 				break;
 		}

@@ -1,14 +1,15 @@
 package net.schlisner.terminalchess;
 
 import android.content.Intent;
+import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
-import uniChess.*;
+import uniChess.Move;
+import uniChess.Player;
 
 public class Game extends AppCompatActivity {
 
@@ -22,7 +23,7 @@ public class Game extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         ActionBar actionBar = getSupportActionBar();
-        actionBar.hide();
+        if (actionBar!=null) actionBar.hide();
 
         Intent menuIntent = getIntent();
 
@@ -68,19 +69,24 @@ public class Game extends AppCompatActivity {
     private void gameAdvance(String in){
 
         uniChess.Game.GameEvent gameResponse = chessGame.advance(in);
+        boardView.setBoard(chessGame.getCurrentBoard());
 
         switch(gameResponse){
             case CHECK:
                 Toast.makeText(getApplicationContext(), "You are in check!", Toast.LENGTH_SHORT).show();
+                break;
             case OK:
-                boardView.setBoard(chessGame.getCurrentBoard());
+                Toast.makeText(getApplicationContext(), "Waiting for opponent...", Toast.LENGTH_SHORT).show();
                 break;
             case CHECKMATE:
                 Toast.makeText(getApplicationContext(), "Checkmate! You lose!", Toast.LENGTH_SHORT).show();
+                break;
             case STALEMATE:
                 Toast.makeText(getApplicationContext(), "Stalemate! Game ends in draw!", Toast.LENGTH_SHORT).show();
+                break;
             case DRAW:
                 Toast.makeText(getApplicationContext(), "Draw!", Toast.LENGTH_SHORT).show();
+                break;
             default:
                 // Save game, exit to menu
                 break;

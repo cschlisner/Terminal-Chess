@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 23
-    buildToolsVersion "22.0.1"
+    buildToolsVersion '25.0.0'
 
     defaultConfig {
         applicationId "net.schlisner.terminalchess"
@@ -20,7 +20,8 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:23.1.0'
+    apk fileTree(include: ['*.jar'], dir: 'libs')
+    debugCompile 'com.android.support:appcompat-v7:23.4.0'
+    debugCompile 'com.android.support:design:23.4.0'
+    debugCompile 'junit:junit:4.12'
 }

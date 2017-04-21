@@ -59,14 +59,18 @@ public class BoardView extends View {
 
     TileDisplay[][] tileDisplays = new TileDisplay[8][8];
 
+    public void flipBoard(){
+        flipped = !flipped;
+    }
+    private boolean flipped = false;
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         tileDim = ((float)getWidth() / 8.0f);
-
         for (int i = 0; i < 8; ++i){
             for (int j = 0; j < 8; ++j) {
-                tileDisplays[i][j].draw(canvas, tileDim, (i*tileDim), (j*tileDim));
+                tileDisplays[flipped ? 7-i : i ][ flipped ? 7-j : j].draw(canvas, tileDim, (i*tileDim), (j*tileDim));
             }
         }
     }
@@ -88,10 +92,12 @@ public class BoardView extends View {
     public Move selectTile(int rank, int file, Player player){
         if (file > 7 || rank > 7 || rank < 0 || file < 0)
             return null;
+        rank = flipped ? 7-rank : rank;
+        file = flipped ? 7-file : file;
 
-
+        int i = 0;
+//        System.out.format("---------  dbg: %s\n", i++);
         TileDisplay selectedTile = tileDisplays[rank][file];
-
         for (TileDisplay[] tda : tileDisplays) {
             for (TileDisplay td : tda) {
                 td.selected = false;
@@ -99,17 +105,22 @@ public class BoardView extends View {
             }
         }
 
-        if (selectedTile.tile.available(player.color) && (!selectedTiles.isEmpty() && !selectedTiles.contains(selectedTile)))
+//        System.out.format("---------  dbg: %s\n", i++);
+        if (selectedTile.tile.available(player.color) && (!selectedTiles.isEmpty() && !selectedTiles.contains(selectedTile))) {
             return null;
+        }
 
+//        System.out.format("---------  dbg: %s\n", i++);
         selectedTile.selected = !selectedTile.selected;
 
+//        System.out.format("---------  dbg: %s\n", i++);
         if (selectedTiles.contains(selectedTile)){
             invalidate();
             selectedTiles.clear();
             return new Move(selectedLoc, selectedTile.tile.getLocale(), gameBoard);
         }
 
+//        System.out.format("---------  dbg: %s\n", i++);
         if (selectedTile.selected) {
             selectedLoc = selectedTile.tile.getLocale();
             selectedTiles.clear();
@@ -117,8 +128,9 @@ public class BoardView extends View {
                 if (m.origin.equals(selectedTile.tile.getLocale())) {
                     tileDisplays[m.destination.x][7 - m.destination.y].selected = true;
 
-                    if (tileDisplays[m.destination.x][7 - m.destination.y].tile.getOccupator() != null)
+                    if (tileDisplays[m.destination.x][7 - m.destination.y].tile.getOccupator() != null) {
                         tileDisplays[m.destination.x][7 - m.destination.y].capture = true;
+                    }
 
                     selectedTiles.add(tileDisplays[m.destination.x][7 - m.destination.y]);
                 }
@@ -127,5 +139,4 @@ public class BoardView extends View {
         invalidate();
         return null;
     }
-
 }

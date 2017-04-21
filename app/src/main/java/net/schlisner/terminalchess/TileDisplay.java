@@ -37,15 +37,19 @@ public class TileDisplay {
 
         if (tile.getOccupator() != null)
            pieceColor = (tile.getOccupator().color.equals(Game.Color.BLACK)) ? Color.WHITE : Color.WHITE;
+
+
     }
 
 
     public void draw(Canvas canvas, float dimensions, float x, float y){
-        piecePaint.setTextSize(dimensions-(0.1f*dimensions));
+        piecePaint.setTextAlign(Paint.Align.LEFT);
         piecePaint.setStyle(Paint.Style.FILL_AND_STROKE);
-        tilePaint.setColor(Color.WHITE);
         tilePaint.setStyle(Paint.Style.STROKE);
         tilePaint.setStrokeWidth(3.0f);
+        tilePaint.setColor(Color.WHITE);
+        piecePaint.setTextSize(dimensions-(0.1f*dimensions));
+
         float sw = tilePaint.getStrokeWidth()+11;
 
         canvas.drawRect(x, y, x+dimensions, y+dimensions, tilePaint);

@@ -358,7 +358,7 @@ public class Board {
 	/**
 	*	Computes a list of all valid moves for all pieces of a given color
 	* 
-	*	@param c The color to gather moves for
+	*	@param color The color to gather moves for
 	*	@return The list of moves
 	*/
 	public List<Move> calculateValidMoves(Game.Color color){

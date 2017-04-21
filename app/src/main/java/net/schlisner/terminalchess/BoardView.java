@@ -96,7 +96,7 @@ public class BoardView extends View {
         file = flipped ? 7-file : file;
 
         int i = 0;
-//        System.out.format("---------  dbg: %s\n", i++);
+        System.out.format("---------  dbg: %s\n", i++);
         TileDisplay selectedTile = tileDisplays[rank][file];
         for (TileDisplay[] tda : tileDisplays) {
             for (TileDisplay td : tda) {
@@ -105,22 +105,18 @@ public class BoardView extends View {
             }
         }
 
-//        System.out.format("---------  dbg: %s\n", i++);
         if (selectedTile.tile.available(player.color) && (!selectedTiles.isEmpty() && !selectedTiles.contains(selectedTile))) {
             return null;
         }
 
-//        System.out.format("---------  dbg: %s\n", i++);
         selectedTile.selected = !selectedTile.selected;
-
-//        System.out.format("---------  dbg: %s\n", i++);
+        invalidate();
         if (selectedTiles.contains(selectedTile)){
             invalidate();
             selectedTiles.clear();
             return new Move(selectedLoc, selectedTile.tile.getLocale(), gameBoard);
         }
 
-//        System.out.format("---------  dbg: %s\n", i++);
         if (selectedTile.selected) {
             selectedLoc = selectedTile.tile.getLocale();
             selectedTiles.clear();
@@ -136,6 +132,7 @@ public class BoardView extends View {
                 }
             }
         }
+
         invalidate();
         return null;
     }

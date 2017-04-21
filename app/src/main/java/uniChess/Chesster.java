@@ -1,5 +1,6 @@
 package uniChess;
 
+import java.io.PrintStream;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,7 +12,7 @@ import java.lang.Thread;
 /**
 *   An object representing a Simulated Player in a chess game. 
 */
-public class Chesster <T> extends Player <T>{
+public class Chesster <T> extends Player <T> {
     public enum StrategyType {LOG, LINEAR, EXP2, EXP4, EXP10}
 
     private Game game;
@@ -61,8 +62,8 @@ public class Chesster <T> extends Player <T>{
         for (Move move : legal)
             smartMoves.add(new SmartMove(move));
 
-        System.out.println("# Moves: "+smartMoves.size());
-        // System.out.println("# Using: "+STRATEGY);
+        sout.println("# Moves: "+smartMoves.size());
+        // sout.println("# Using: "+STRATEGY);
 
         sysTime = System.currentTimeMillis();
 
@@ -70,7 +71,7 @@ public class Chesster <T> extends Player <T>{
 
         for (SmartMove sm : smartMoves)
             threadPool.add(new StrategyProcessorThread(sm, this));
-        
+
 
         for (int i = 0; i < smartMoves.size(); ++i){
             threadPool.get(i).start();
@@ -82,7 +83,7 @@ public class Chesster <T> extends Player <T>{
 
         Collections.sort(smartMoves);
         long processTime = (System.currentTimeMillis() - sysTime);
-        
+
         int treesize = 0;
         for (StrategyProcessorThread t : threadPool){
             treesize += t.treesize;
@@ -90,19 +91,19 @@ public class Chesster <T> extends Player <T>{
             ++threads;
         }
 
-        System.out.format("\n# Time : %sms | Avg Move Process Time: %sms\n", processTime, (avgThreadTime / threads));
-        System.out.format("# Total Sub Move Tree Size: %s | Avg Sub Move Process Time: %sms\n\n", treesize, (processTime / treesize));
+        sout.format("\n# Time : %sms | Avg Move Process Time: %sms\n", processTime, (avgThreadTime / threads));
+        sout.format("# Total Sub Move Tree Size: %s | Avg Sub Move Process Time: %sms\n\n", treesize, (processTime / treesize));
 
 
         // if (smartMoves.get(smartMoves.size()-1).strategicValue == smartMoves.get(smartMoves.size()-2).strategicValue)
         //     best = smartMoves.get(smartMoves.size()-((new Random()).nextInt(1)+1));
-            
+
         best = smartMoves.get(smartMoves.size()-1);
 
         // for (SmartMove saasd : smartMoves)
-        //     System.out.println(saasd.getDataSring());
+        //     sout.println(saasd.getDataSring());
 
-        System.out.println(((SmartMove)best).getDataSring());
+        sout.println(((SmartMove)best).getDataSring());
 
         return best;
     }
@@ -111,13 +112,15 @@ public class Chesster <T> extends Player <T>{
     public void printProgress(int prog, int total, String sm){
         double percent = (double)prog/total;
         double percentFrom20 = 20 * percent;
-        System.out.print("\rThinking [");
-        for (int i = 0; i < 20; ++i){
-            if (i <= (int)percentFrom20)
-                System.out.print("=");
-            else System.out.print(" ");
-        }
-        System.out.print("] "+sm);
+        sout.print("\rThinking [");
+        for (int i = 0; i < 20; ++i)
+            sout.println((i <= (int)percentFrom20) ? "=" : " ");
+        sout.print("] "+sm);
+    }
+
+    private static PrintStream sout = System.out;
+    public void setPrintStream(PrintStream out){
+        sout = out;
     }
 }
 

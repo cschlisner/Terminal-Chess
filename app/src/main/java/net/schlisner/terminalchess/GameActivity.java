@@ -2,8 +2,10 @@ package net.schlisner.terminalchess;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.text.AndroidCharacter;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
@@ -12,6 +14,7 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.Map;
 import java.util.Random;
 
 import uniChess.*;
@@ -37,6 +40,8 @@ public class GameActivity extends AppCompatActivity {
         Intent menuIntent = getIntent();
         opponentType = menuIntent.getStringExtra("opponent");
         if (menuIntent.getStringExtra("init_mode").equals("new")){
+            // decide which color
+            boolean white = (new Random(System.currentTimeMillis())).nextBoolean();
             switch (opponentType){
                 case "local":
                     // both players interact with the game in the same way
@@ -44,10 +49,17 @@ public class GameActivity extends AppCompatActivity {
                     whitePlayer = new Player<>("WHITE", Game.Color.WHITE);
                     break;
                 case "network":
+                    Map<String, String> env = System.getenv();
+                    for (String envName : env.keySet()) {
+                        System.out.format("%s=%s%n",
+                                envName,
+                                env.get(envName));
+                    }
+                    String opponentIP = menuIntent.getStringExtra("opponent_ip");
+                    blackPlayer = new NetworkPlayer<>("BLACK", Game.Color.BLACK);
+                    whitePlayer = new NetworkPlayer<>("WHITE", Game.Color.WHITE);
                     break;
                 case "ai":
-                    // decide which color the human player is (i.e. if they make first move)
-                    boolean white = (new Random(System.currentTimeMillis())).nextBoolean();
                     Toast.makeText(getApplicationContext(), String.format("You will be playing as %s", white ? "white" : "black"), Toast.LENGTH_SHORT).show();
 
                     blackPlayer = white ? new Chesster<>("BLACK", Game.Color.BLACK)
@@ -141,7 +153,6 @@ public class GameActivity extends AppCompatActivity {
         switch(gameResponse){
             case CHECK:
                 Toast.makeText(getApplicationContext(), "You are in check!", Toast.LENGTH_SHORT).show();
-                break;
             case OK:
                 switch (opponentType){
                     case "local":
@@ -149,7 +160,11 @@ public class GameActivity extends AppCompatActivity {
                         Toast.makeText(getApplicationContext(), (chessGame.getCurrentPlayer().color)+" to move", Toast.LENGTH_SHORT).show();
                         break;
                     case "network":
+                        Toast.makeText(getApplicationContext(), "Sending Move...", Toast.LENGTH_SHORT).show();
+                        ((NetworkPlayer)chessGame.getDormantPlayer()).sendMoveAN(in);
+
                         Toast.makeText(getApplicationContext(), "Waiting for opponent...", Toast.LENGTH_SHORT).show();
+                        gameAdvance(((NetworkPlayer)chessGame.getCurrentPlayer()).getMoveAN());
                         break;
                     case "ai":
                         gameAdvance(((Chesster) chessGame.getCurrentPlayer()).getMove().getANString());

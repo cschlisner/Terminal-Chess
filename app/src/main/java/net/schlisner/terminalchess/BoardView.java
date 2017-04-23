@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -36,11 +37,11 @@ public class BoardView extends View {
 
     Paint paint = new Paint();
 
-    public float tileDim;
+    private float tileDim;
 
     public BoardView(Context context, AttributeSet attr){
         super(context, attr);
-        initTiles();
+        setBoard(new Board());
     }
 
     public void setBoard(Board b){
@@ -55,6 +56,7 @@ public class BoardView extends View {
                tileDisplays[i][j] = new TileDisplay(getContext(), gameBoard.getTile(i,7-j));
             }
         }
+        currentlySelected = tileDisplays[0][0];
     }
 
     TileDisplay[][] tileDisplays = new TileDisplay[8][8];
@@ -75,63 +77,56 @@ public class BoardView extends View {
         }
     }
 
-    public List<TileDisplay> selectedTiles = new ArrayList<>();
-    private Location selectedLoc;
+    public void updateValidMoves(){
+        List<TileDisplay> validDestinations = new ArrayList<>();
+        for (TileDisplay[] tda : tileDisplays){
+            for (TileDisplay td : tda){
+                td.virtualOccupator = null;
+                if (td.tile.getOccupator() != null){
+                    validDestinations.clear();
+                    for (Move move : gameBoard.getLegalMoves(td.tile.getOccupator().color))
+                        if (move.origin.equals(td.tile.getLocale()))
+                            validDestinations.add(tileDisplays[move.destination.x][7-move.destination.y]);
+                    td.setValidDestinations(validDestinations);
+                }
+            }
+        }
+    }
 
+    private TileDisplay currentlySelected;
     /**
      * Selects a tile display and all valid moves originating from the linked tile.
      * Will return the tile that has been selected if the tile has a piece which has
      * valid moves OR a tile with valid moves has already been selected
      * and the selected tile is one of the valid moves.
      *
-     * @param file file of the tile (x coordinate)
-     * @param rank rank of the tile (y coordinate)
+     * @param x (x coordinate) on View
+     * @param y (y coordinate) on VIew
      * @param player player making the selection
      * @return Move that was selected
      */
-    public Move selectTile(int rank, int file, Player player){
+    public Move selectTile(int x, int y, Player player){
+        int rank = (int) Math.floor(x / tileDim);
+        int file = (int) Math.floor(y / tileDim);
         if (file > 7 || rank > 7 || rank < 0 || file < 0)
             return null;
+
         rank = flipped ? 7-rank : rank;
         file = flipped ? 7-file : file;
 
-        int i = 0;
-        System.out.format("---------  dbg: %s\n", i++);
         TileDisplay selectedTile = tileDisplays[rank][file];
-        for (TileDisplay[] tda : tileDisplays) {
-            for (TileDisplay td : tda) {
-                td.selected = false;
-                td.capture = false;
-            }
+
+        if (currentlySelected != null &&currentlySelected.getValidDestinations().contains(selectedTile)){
+            return new Move(currentlySelected.tile.getLocale(), selectedTile.tile.getLocale(), gameBoard);
         }
 
-        if (selectedTile.tile.available(player.color) && (!selectedTiles.isEmpty() && !selectedTiles.contains(selectedTile))) {
+        if (currentlySelected == null || selectedTile.tile.available(player.color))
             return null;
-        }
 
-        selectedTile.selected = !selectedTile.selected;
-        invalidate();
-        if (selectedTiles.contains(selectedTile)){
-            invalidate();
-            selectedTiles.clear();
-            return new Move(selectedLoc, selectedTile.tile.getLocale(), gameBoard);
-        }
 
-        if (selectedTile.selected) {
-            selectedLoc = selectedTile.tile.getLocale();
-            selectedTiles.clear();
-            for (Move m : gameBoard.getLegalMoves(player)) {
-                if (m.origin.equals(selectedTile.tile.getLocale())) {
-                    tileDisplays[m.destination.x][7 - m.destination.y].selected = true;
-
-                    if (tileDisplays[m.destination.x][7 - m.destination.y].tile.getOccupator() != null) {
-                        tileDisplays[m.destination.x][7 - m.destination.y].capture = true;
-                    }
-
-                    selectedTiles.add(tileDisplays[m.destination.x][7 - m.destination.y]);
-                }
-            }
-        }
+        currentlySelected.deselect();
+        selectedTile.select();
+        currentlySelected = selectedTile;
 
         invalidate();
         return null;

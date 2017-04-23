@@ -7,6 +7,9 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.support.v4.content.ContextCompat;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import uniChess.*;
 import uniChess.Game;
 
@@ -15,10 +18,18 @@ import uniChess.Game;
  */
 public class TileDisplay {
 
+    public Piece virtualOccupator;
     public Board.Tile tile;
+
+    private List<TileDisplay> validDestinations = new ArrayList<>();
+
+    // BoardView of which this TileDisplay belongs
+
     private Paint tilePaint = new Paint();
     private Paint piecePaint = new Paint();
     private int fillColor, pieceColor, chessBoardHighlight, chessBoardCapture;
+    public List<TileDisplay> selectedTiles = new ArrayList<>();
+
 
     public boolean selected, capture;
 
@@ -35,12 +46,40 @@ public class TileDisplay {
         chessBoardHighlight = ContextCompat.getColor(context, R.color.chessBoardHighlight);
         chessBoardCapture = ContextCompat.getColor(context, R.color.chessBoardCapture);
 
-        if (tile.getOccupator() != null)
-           pieceColor = (tile.getOccupator().color.equals(Game.Color.BLACK)) ? Color.WHITE : Color.WHITE;
+        if (tile.getOccupator() != null){
+            pieceColor = (tile.getOccupator().color.equals(Game.Color.BLACK)) ? Color.WHITE : Color.WHITE;
+        }
 
 
     }
 
+    public void select(){
+        this.selected = true;
+
+        for (TileDisplay td : validDestinations) {
+            td.selected = true;
+            if (td.tile.getOccupator() != null)
+                td.capture = true;
+        }
+    }
+
+    public void deselect(){
+        this.selected = false;
+        this.capture = false;
+        for (TileDisplay td : validDestinations) {
+            td.capture = false;
+            td.selected = false;
+        }
+    }
+
+    public void setValidDestinations(List<TileDisplay> tileList){
+        validDestinations.clear();
+        validDestinations.addAll(tileList);
+    }
+
+    public List<TileDisplay> getValidDestinations(){
+        return validDestinations;
+    }
 
     public void draw(Canvas canvas, float dimensions, float x, float y){
         piecePaint.setTextAlign(Paint.Align.LEFT);
@@ -66,6 +105,10 @@ public class TileDisplay {
         }
         if (tile.getOccupator()!=null) {
             canvas.drawText(tile.getOccupator().getSymbol(), x+(0.16f*dimensions), y+dimensions-(0.2f*dimensions), piecePaint);
+        }
+        else if (virtualOccupator != null){
+            canvas.drawText(virtualOccupator.getSymbol(), x+(0.16f*dimensions), y+dimensions-(0.2f*dimensions), piecePaint);
+
         }
     }
 }

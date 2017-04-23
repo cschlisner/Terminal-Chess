@@ -6,6 +6,7 @@ import android.os.SystemClock;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.AndroidCharacter;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
@@ -37,6 +38,11 @@ public class GameActivity extends AppCompatActivity {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar!=null) actionBar.hide();
 
+        setContentView(R.layout.activity_game);
+
+        boardView = (BoardView) findViewById(R.id.boardviewer);
+        statusView = (TextView) findViewById(R.id.aiOutTextView);
+
         Intent menuIntent = getIntent();
         opponentType = menuIntent.getStringExtra("opponent");
         if (menuIntent.getStringExtra("init_mode").equals("new")){
@@ -49,12 +55,6 @@ public class GameActivity extends AppCompatActivity {
                     whitePlayer = new Player<>("WHITE", Game.Color.WHITE);
                     break;
                 case "network":
-                    Map<String, String> env = System.getenv();
-                    for (String envName : env.keySet()) {
-                        System.out.format("%s=%s%n",
-                                envName,
-                                env.get(envName));
-                    }
                     String opponentIP = menuIntent.getStringExtra("opponent_ip");
                     blackPlayer = new NetworkPlayer<>("BLACK", Game.Color.BLACK);
                     whitePlayer = new NetworkPlayer<>("WHITE", Game.Color.WHITE);
@@ -86,14 +86,12 @@ public class GameActivity extends AppCompatActivity {
 
         //uniChess.GameActivity.useDarkChars = true;
 
-        setContentView(R.layout.activity_game);
-
-        boardView = (BoardView) findViewById(R.id.boardviewer);
-        statusView = (TextView) findViewById(R.id.aiOutTextView);
 
         boardView.setBoard(chessGame.getCurrentBoard());
 
         statusView.setText(opponentType);
+
+        boardView.updateValidMoves();
 
         boardView.setOnTouchListener(new View.OnTouchListener() {
             int rank, file;
@@ -103,15 +101,12 @@ public class GameActivity extends AppCompatActivity {
                     BoardView bV = (BoardView) v;
                     float x = e.getX();
                     float y = e.getY();
+                    Log.d("boardVIewOnTouch", "x:"+x+" y:"+y);
                     switch (e.getAction()) {
                         case MotionEvent.ACTION_DOWN:
-                            rank = (int) Math.floor(x / bV.tileDim);
-//                            System.out.format("---------  dbg: rank: %s\n", rank);
-                            file = (int) Math.floor(y / bV.tileDim);
-//                            System.out.format("---------  dbg: file: %s\n", file);
                             break;
                         case MotionEvent.ACTION_UP:
-                            Move selection = bV.selectTile(rank, file, chessGame.getCurrentPlayer());
+                            Move selection = bV.selectTile((int)x, (int)y, chessGame.getCurrentPlayer());
                             if (selection != null){
                                 gameAdvance(selection.getANString());
                             }
@@ -147,25 +142,34 @@ public class GameActivity extends AppCompatActivity {
 
     private void gameAdvance(String in){
 
+        Log.d("gameAdvance","Advancing game");
+        long t1 = System.currentTimeMillis();
+
         Game.GameEvent gameResponse = chessGame.advance(in);
+
+        Log.d("gameAdvance", "got response in "+(System.currentTimeMillis() - t1));
         boardView.setBoard(chessGame.getCurrentBoard());
 
         switch(gameResponse){
             case CHECK:
                 Toast.makeText(getApplicationContext(), "You are in check!", Toast.LENGTH_SHORT).show();
             case OK:
+                boardView.updateValidMoves();
+
                 switch (opponentType){
+
                     case "local":
                         boardView.flipBoard();
                         Toast.makeText(getApplicationContext(), (chessGame.getCurrentPlayer().color)+" to move", Toast.LENGTH_SHORT).show();
                         break;
+
                     case "network":
                         Toast.makeText(getApplicationContext(), "Sending Move...", Toast.LENGTH_SHORT).show();
                         ((NetworkPlayer)chessGame.getDormantPlayer()).sendMoveAN(in);
-
                         Toast.makeText(getApplicationContext(), "Waiting for opponent...", Toast.LENGTH_SHORT).show();
                         gameAdvance(((NetworkPlayer)chessGame.getCurrentPlayer()).getMoveAN());
                         break;
+
                     case "ai":
                         gameAdvance(((Chesster) chessGame.getCurrentPlayer()).getMove().getANString());
                         break;

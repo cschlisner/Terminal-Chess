@@ -13,7 +13,7 @@ import java.io.*;
  * Created by cschl_000 on 4/20/2017.
  */
 
-public class NetworkPlayer<T> extends Player<T>  {
+public class UDPNetworkPlayer<T> extends Player<T>  implements INetPlayer{
     DatagramSocket serverSocket = null;
 
     static int server_port = 9876;
@@ -23,11 +23,11 @@ public class NetworkPlayer<T> extends Player<T>  {
     byte[] sendData = new byte[4];
 
     /**
-     * UDP now, eventually network play
+     * Virtual player that communicates over UDP
      * @param id identifier (
      * @param c
      */
-    public NetworkPlayer(T id, Game.Color c) {
+    public UDPNetworkPlayer(T id, Game.Color c) {
         super(id, c);
 
         System.out.format("\n%s :: Receiving on: %s Sending to: %s\n", id, server_port, send_port);
@@ -42,7 +42,6 @@ public class NetworkPlayer<T> extends Player<T>  {
             }
             break;
         }
-
     }
 
     public void registerOpponentIP(String IP) throws Exception{
@@ -57,6 +56,7 @@ public class NetworkPlayer<T> extends Player<T>  {
         send_port = port;
     }
 
+    @Override
     public String getMoveAN(){
         String netMove = null;
         System.out.println("Waiting for move from network...");
@@ -75,6 +75,7 @@ public class NetworkPlayer<T> extends Player<T>  {
         return netMove;
     }
 
+    @Override
     public void sendMoveAN(String AN){
         try {
             DatagramSocket soc = new DatagramSocket();

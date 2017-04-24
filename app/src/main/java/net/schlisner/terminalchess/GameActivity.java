@@ -61,17 +61,11 @@ public class GameActivity extends AppCompatActivity {
                     System.out.format("d: %s o: %s", selfIP, opponentIP);
                     white = (selfIP.compareTo(opponentIP) > 1);
 
-                    blackPlayer = white ? new NetworkPlayer<>(opponentIP, Game.Color.BLACK)
-                            : new NetworkPlayer<>(selfIP, Game.Color.BLACK);
-                    whitePlayer = white ? new NetworkPlayer<>(selfIP, Game.Color.WHITE)
-                            : new NetworkPlayer<>(opponentIP, Game.Color.WHITE);
+                    blackPlayer = white ? new HTTPNetworkPlayer<>(opponentIP, Game.Color.BLACK)
+                            : new HTTPNetworkPlayer<>(selfIP, Game.Color.BLACK);
+                    whitePlayer = white ? new HTTPNetworkPlayer<>(selfIP, Game.Color.WHITE)
+                            : new HTTPNetworkPlayer<>(opponentIP, Game.Color.WHITE);
 
-                    try {
-                        ((NetworkPlayer) blackPlayer).registerOpponentIP(whitePlayer.getID());
-                        ((NetworkPlayer) whitePlayer).registerOpponentIP(blackPlayer.getID());
-                    } catch (Exception e){
-                        System.out.println("fuck");
-                    }
                     if (!white)
                         boardView.flipBoard();
                     break;
@@ -180,10 +174,10 @@ public class GameActivity extends AppCompatActivity {
                         break;
 
                     case "network":
-                        Toast.makeText(getApplicationContext(), "Sending Move...", Toast.LENGTH_SHORT).show();
-                        ((NetworkPlayer)chessGame.getDormantPlayer()).sendMoveAN(in);
+                        ((HTTPNetworkPlayer)chessGame.getDormantPlayer()).sendMoveAN(in);
                         Toast.makeText(getApplicationContext(), "Waiting for opponent...", Toast.LENGTH_SHORT).show();
-                        gameAdvance(((NetworkPlayer)chessGame.getCurrentPlayer()).getMoveAN());
+                        String resp = ((HTTPNetworkPlayer)chessGame.getCurrentPlayer()).getMoveAN();
+                        System.out.println(resp);
                         break;
 
                     case "ai":

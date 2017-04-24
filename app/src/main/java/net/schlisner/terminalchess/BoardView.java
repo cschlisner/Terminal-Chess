@@ -116,7 +116,13 @@ public class BoardView extends View {
 
         TileDisplay selectedTile = tileDisplays[rank][file];
 
-        if (currentlySelected != null &&currentlySelected.getValidDestinations().contains(selectedTile)){
+        if (currentlySelected != null && currentlySelected.getValidDestinations().contains(selectedTile)){
+            selectedTile.virtualOccupator = currentlySelected.tile.getOccupator();
+//            currentlySelected.tile.setOccupator(null);
+            currentlySelected.deselect();
+
+            invalidate();
+
             return new Move(currentlySelected.tile.getLocale(), selectedTile.tile.getLocale(), gameBoard);
         }
 

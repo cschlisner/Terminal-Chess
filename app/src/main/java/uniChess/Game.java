@@ -169,15 +169,15 @@ public class Game {
 	*/
 	public GameEvent advance(String in){
 		try {
-
 			if (white.draw && black.draw)
 				return GameEvent.DRAW;
 
 			Move move = Move.parseMove(getCurrentBoard(), getCurrentPlayer().color, in);
-			
-			List<Move> legal = getCurrentBoard().getLegalMoves(getCurrentPlayer());
-			
-			if (!legal.contains(move))
+
+			Board cb = getCurrentBoard();
+			List<Move> legal = cb.getLegalMoves(getCurrentPlayer());
+
+            if (!legal.contains(move))
 				return GameEvent.ILLEGAL;
 
 			boards.add(move.getSimulation());
@@ -209,7 +209,6 @@ public class Game {
 
 				}
 		}
-		
-		return GameEvent.OK;	
+		return GameEvent.OK;
 	}
 }

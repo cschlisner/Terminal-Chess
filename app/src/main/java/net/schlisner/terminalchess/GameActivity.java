@@ -24,6 +24,7 @@ public class GameActivity extends AppCompatActivity {
 
     uniChess.Game chessGame;
 
+
     Player<String> whitePlayer;
     Player<String> blackPlayer;
 
@@ -56,8 +57,23 @@ public class GameActivity extends AppCompatActivity {
                     break;
                 case "network":
                     String opponentIP = menuIntent.getStringExtra("opponent_ip");
-                    blackPlayer = new NetworkPlayer<>("BLACK", Game.Color.BLACK);
-                    whitePlayer = new NetworkPlayer<>("WHITE", Game.Color.WHITE);
+                    String selfIP = menuIntent.getStringExtra("self_ip");
+                    System.out.format("d: %s o: %s", selfIP, opponentIP);
+                    white = (selfIP.compareTo(opponentIP) > 1);
+
+                    blackPlayer = white ? new NetworkPlayer<>(opponentIP, Game.Color.BLACK)
+                            : new NetworkPlayer<>(selfIP, Game.Color.BLACK);
+                    whitePlayer = white ? new NetworkPlayer<>(selfIP, Game.Color.WHITE)
+                            : new NetworkPlayer<>(opponentIP, Game.Color.WHITE);
+
+                    try {
+                        ((NetworkPlayer) blackPlayer).registerOpponentIP(whitePlayer.getID());
+                        ((NetworkPlayer) whitePlayer).registerOpponentIP(blackPlayer.getID());
+                    } catch (Exception e){
+                        System.out.println("fuck");
+                    }
+                    if (!white)
+                        boardView.flipBoard();
                     break;
                 case "ai":
                     Toast.makeText(getApplicationContext(), String.format("You will be playing as %s", white ? "white" : "black"), Toast.LENGTH_SHORT).show();
@@ -72,6 +88,7 @@ public class GameActivity extends AppCompatActivity {
             }
 
             chessGame = new uniChess.Game(whitePlayer, blackPlayer);
+
         }
         else if (menuIntent.getStringExtra("init_mode").equals("resume")){
             // load saved uniChess.GameActivity
@@ -101,7 +118,6 @@ public class GameActivity extends AppCompatActivity {
                     BoardView bV = (BoardView) v;
                     float x = e.getX();
                     float y = e.getY();
-                    Log.d("boardVIewOnTouch", "x:"+x+" y:"+y);
                     switch (e.getAction()) {
                         case MotionEvent.ACTION_DOWN:
                             break;

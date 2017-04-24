@@ -27,17 +27,22 @@ public class NetworkPlayer<T> extends Player<T>  {
      * @param id identifier (
      * @param c
      */
-    public NetworkPlayer(T id, Game.Color c){
+    public NetworkPlayer(T id, Game.Color c) {
         super(id, c);
 
-        System.out.format("%s :: Receiving on: %s\nSending to: %s\n", id, server_port, send_port);
+        System.out.format("\n%s :: Receiving on: %s Sending to: %s\n", id, server_port, send_port);
 
-        try {
-            serverSocket = new DatagramSocket(server_port);
-            //serverSocket.bind(new InetSocketAddress(InetAddress.getByName("localhost"), Integer.valueOf(args[0])));
-        } catch (Exception e){
-            System.out.println(e.getMessage());
+        for (int i = 0; i < 100; ++i) {
+            try {
+                serverSocket = new DatagramSocket(server_port+i);
+                //serverSocket.bind(new InetSocketAddress(InetAddress.getByName("localhost"), Integer.valueOf(args[0])));
+            } catch (Exception e) {
+                System.out.format("init port %s : "+e.getMessage(), server_port+i);
+                continue;
+            }
+            break;
         }
+
     }
 
     public void registerOpponentIP(String IP) throws Exception{

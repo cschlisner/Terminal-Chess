@@ -13,7 +13,7 @@ import java.io.*;
  * Created by cschl_000 on 4/20/2017.
  */
 
-public class UDPNetworkPlayer<T> extends Player<T>  implements INetPlayer{
+public class UDPNetworkPlayer<T> extends INetPlayer<T>{
     DatagramSocket serverSocket = null;
 
     static int server_port = 9876;

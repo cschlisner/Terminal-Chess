@@ -4,21 +4,27 @@
 import cgi
 import rethinkdb as r
 import random
+import time 
+import hashlib
+
 print ("Content-type:text/html\r\n\r\n")
 
-
+def hex_digest(player_uuid):
+	m = hashlib.md5()
+	m.update(player_uuid.encode('utf-8'))
+	return m.hexdigest()
 
 def find_opponent():
 	return r.db("chess").table("users").filter({
 				"online": True, 
-				"ingame" : False
 			}).nth(0).getField("id").run(conn)
 
 def create_game(player_one, player_two):
 	w = random.choice([True, False])
 	return r.db("chess").table('games').insert({
-	  "white_uuid" : player_one if w else player_two,
-	  "black_uuid" : player_two if w else player_one,
+	  "uts" : int(time.time()),
+	  "white_md5uuid" : hex_digest(player_one) if w else hex_digest(player_two),
+	  "black_md5uuid" : hex_digest(player_two) if w else hex_digest(player_one),
 	  "w": True,
 	  "moves": []
 	}).run(conn)["generated_keys"][0]
@@ -26,20 +32,19 @@ def create_game(player_one, player_two):
 conn = r.connect('localhost', 28015).repl()
 
 while (True):
-	online_inlobby = r.db("chess").table("users").filter({
-		"online":True, 
-		"ingame" : False
+	online = r.db("chess").table("users").filter({
+		"online":True 
 	}).run(conn)
 	try:
-		player_one = online_inlobby.next()
-		player_two = online_inlobby.next()	
+		player_one = online.next()
+		player_two = online.next()	
 	except:
 		continue;
 	
 	r.db("chess").table("users").get(player_one["id"]).update({
-		"ingame" : True
+		"online": False
 	}).run(conn)
 	r.db("chess").table("users").get(player_two["id"]).update({
-		"ingame" : True
+		"online": False
 	}).run(conn)
 	print("created game: " + create_game(player_one["id"], player_two["id"]))

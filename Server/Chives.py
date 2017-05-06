@@ -4,45 +4,37 @@
 
 import cgi
 import rethinkdb as r
+import time
+import hashlib
 print ("Content-type:text/html\r\n\r\n")
-
-
 
 def find_opponent():
 	return r.db("chess").table("users").filter({"online":true, "ingame" : false}).nth(0).getField("id").run(conn)
 
-def find_games(player_uuid):
-	return r.db("chess").table("games").filter((r.row["white_uuid"] == player_uuid) | (r.row["black_uuid"] == player_uuid)).run(conn)
+def hex_digest(player_uuid):
+	m = hashlib.md5()
+	m.update(player_uuid.encode('utf-8'))
+	return m.hexdigest()
 
-def create_game(player_one, player_two):
-	w = random.choice([True, False])
-	return r.db("chess").table('games').insert({
-	  "white_uuid" : player_one if w else plyer_two,
-	  "black_uuid" : player_two if w else player_one,
-	  "w": true,
-	  "moves": []
-	}).getField("generated_keys").nth(0).run(conn)
-	
+def find_games(player_uuid):
+	uuidmd5 = hex_digest(player_uuid)
+	return r.db("chess").table("games").filter((r.row["white_md5uuid"] == uuidmd5) | (r.row["black_md5uuid"] == uuidmd5)).order_by(r.desc("uts")).run(conn)
+
 def register():
 	return r.db("chess").table("users").insert({
-	  "online" : True, 
-	  "ingame" : False
+	  "online" : True
 	}).run(conn)["generated_keys"][0]
 
 
 # switch their online status
 def checkin(player):
-	in_game = len(find_games(player)) > 0
 	r.db("chess").table("users").get(player).update({
 		"online" : True, 
-		"ingame" : in_game
 	}).run(conn)
 
 def checkout(player):
-	in_game = len(find_games(player)) > 0
 	r.db("chess").table("users").get(player).update({
 		"online" : False, 
-		"ingame" : in_game
 	}).run(conn)
 
 conn = r.connect('localhost', 28015)

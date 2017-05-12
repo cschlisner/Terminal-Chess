@@ -21,9 +21,11 @@ android {
 
 dependencies {
     apk fileTree(include: ['*.jar'], dir: 'libs')
+    compile 'cz.msebera.android:httpclient:4.4.1.1'
+    compile 'com.rethinkdb:rethink-java-driver:0.3'
+    compile 'com.android.support.constraint:constraint-layout:+'
+    compile group: 'org.json', name: 'json', version: '20160810'
     debugCompile 'com.android.support:appcompat-v7:23.4.0'
     debugCompile 'com.android.support:design:23.4.0'
     debugCompile 'junit:junit:4.12'
-    compile 'cz.msebera.android:httpclient:4.4.1.1'
-    compile 'com.rethinkdb:rethink-java-driver:0.3'
 }

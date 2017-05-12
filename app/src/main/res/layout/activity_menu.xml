@@ -4,74 +4,66 @@
     android:layout_height="match_parent" android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
+    android:backgroundTint="#000000"
     android:paddingBottom="@dimen/activity_vertical_margin" tools:context=".MenuActivity"
     android:background="#161616">
 
     <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Resume Game"
         android:id="@+id/newGameButton"
-        android:layout_marginTop="48dp"
-        android:textStyle="italic"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="184dp"
+        android:onClick="resumeGame"
+        android:text="Resume Game"
+        android:textColor="@color/chessBoardHighlight"
+        android:typeface="monospace"
         android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:onClick="resumeGame" />
+        android:layout_alignLeft="@+id/button"
+        android:layout_alignStart="@+id/button" />
 
     <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="New Network Game"
         android:id="@+id/button3"
-        android:textStyle="italic"
-        android:onClick="startNewNetworkGame"
-        android:layout_marginTop="45dp"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_below="@+id/newGameButton"
-        android:layout_centerHorizontal="true" />
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="45dp"
+        android:elevation="0dp"
+        android:onClick="startNewNetworkGame"
+        android:text="-> Network Game"
+        android:textAllCaps="false"
+        android:textColor="@color/chessBoardHighlight"
+        android:textStyle="italic"
+        android:typeface="monospace" />
 
     <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="New Local Game"
         android:id="@+id/button2"
-        android:textStyle="italic"
-        android:onClick="startNewLocalGame"
-        android:layout_marginTop="28dp"
-        android:layout_below="@+id/button3"
-        android:layout_centerHorizontal="true" />
-
-    <Button
+        style="@style/Widget.AppCompat.Button.Borderless"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="New AI Game"
-        android:id="@+id/button"
-        android:layout_marginTop="24dp"
+        android:layout_below="@+id/button3"
+        android:layout_centerHorizontal="true"
+        android:onClick="startNewLocalGame"
+        android:text="-> Local Game"
+        android:textAllCaps="false"
+        android:textColor="@color/chessBoardHighlight"
         android:textStyle="italic"
+        android:typeface="monospace" />
+
+    <Button
+        android:id="@+id/button"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:onClick="startNewAIGame"
+        android:text="-> AI Game"
+        android:textAllCaps="false"
+        android:textColor="@color/chessBoardHighlight"
+        android:textStyle="italic"
+        android:typeface="monospace"
         android:layout_below="@+id/button2"
         android:layout_centerHorizontal="true" />
-
-    <EditText
-        android:id="@+id/ipText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:ems="10"
-        android:inputType="textPersonName"
-        android:text="device_ip"
-        android:textColor="@android:color/background_light"
-        android:layout_below="@+id/newGameButton"
-        android:layout_centerHorizontal="true" />
-
-    <TextView
-        android:id="@+id/deviceIP"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignEnd="@+id/newGameButton"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_alignRight="@+id/newGameButton"
-        android:text="TextView"
-        android:textColor="@color/chessPiecesLight" />
 
 </RelativeLayout>

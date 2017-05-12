@@ -1,6 +1,8 @@
 package net.schlisner.terminalchess;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -45,7 +47,7 @@ public class GameActivity extends AppCompatActivity {
         Intent menuIntent = getIntent();
         opponentType = menuIntent.getStringExtra("opponent");
         if (menuIntent.getStringExtra("init_mode").equals("new")){
-            // decide which color
+            // decide which colorz
             boolean white = (new Random(System.currentTimeMillis())).nextBoolean();
             switch (opponentType){
                 case "local":
@@ -54,7 +56,6 @@ public class GameActivity extends AppCompatActivity {
                     playerTwo = new Player<>("BLACK", Game.Color.BLACK);
                     break;
                 case "network":
-
                     playerOne = new HTTPNetworkPlayer<>(uuid.toString(), white ? Game.Color.WHITE : Game.Color.BLACK);
 
                     statusView.setText(uuid.toString());

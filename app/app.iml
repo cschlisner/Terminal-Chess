@@ -104,6 +104,8 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" exported="" name="design-23.4.0" level="project" />
     <orderEntry type="library" exported="" name="support-annotations-23.4.0" level="project" />
+    <orderEntry type="library" exported="" name="constraint-layout-solver-1.0.2" level="project" />
+    <orderEntry type="library" exported="" name="constraint-layout-1.0.2" level="project" />
     <orderEntry type="library" exported="" name="logback-classic-1.0.9" level="project" />
     <orderEntry type="library" exported="" name="rethink-java-driver-0.3" level="project" />
     <orderEntry type="library" exported="" name="guava-17.0" level="project" />

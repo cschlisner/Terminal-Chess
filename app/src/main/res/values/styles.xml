@@ -17,4 +17,14 @@
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
+    <style name="Schlisner.Terminal.Text.Headerext" parent="Widget.AppCompat.Button.Borderless">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">184dp</item>
+        <item name="android:textColor">@color/chessBoardHighlight</item>
+        <item name="android:typeface">monospace</item>
+        <item name="android:layout_alignParentTop">true</item>
+        <item name="android:layout_alignLeft">@+id/button</item>
+    </style>
+
 </resources>

@@ -4,9 +4,12 @@ import android.os.AsyncTask;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.json.*;
 
+import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.HttpEntity;
 import cz.msebera.android.httpclient.HttpResponse;
 import cz.msebera.android.httpclient.NameValuePair;
@@ -22,63 +25,81 @@ import cz.msebera.android.httpclient.util.EntityUtils;
  * Created by cschl_000 on 5/11/2017.
  */
 
-public class PostOffice extends AsyncTask<String, Void, String> {
+public class PostOffice {
 
-    private static final String Server = "http://http://138.197.213.251/";
-    private static final String Chives = Server+"cgi-bin/Chives.py";
-    private static final String Chesster = Server+"cgi-bin/Chesster.py";
-
+    // Addresses of our friends
+    private static final String Server = "http://138.197.213.251/";
+    private static final String Chives = Server + "cgi-bin/Chives.py";
+    private static final String Chesster = Server + "cgi-bin/Chesster.py";
+    private static final int NETWORK_TIMEOUT_SECS = 5;
     /**
      * Registers a new chess player with the server and returns the corresponding uuid
+     *
      * @return UUID of created player
      */
-    public String register(){
-        doInBackground(Chives, "action", "register");
-        return responseBody; // should be just the uuid text
+    public String register() throws Exception{
+        MailSend registerPlayer = new MailSend();
+        String meme = registerPlayer.execute(Chives, "action", "register").get(NETWORK_TIMEOUT_SECS, TimeUnit.SECONDS);
+        return meme; // should be just the uuid text
     }
 
     /**
      * Lists all game IDs in ascending order of time created (newest game first)
+     *
      * @return List of all games user is engaged in, by time created
      */
-    public List<String> listGames(String uuid){
+    public List<String> listGames(String uuid) {
         List<String> gameIDList = new ArrayList<>();
-        doInBackground(Chives, "action", "retrieveGames");
+        MailSend getGameList = new MailSend();
+        getGameList.execute(Chives, "action", "retrieveGames");
+
+        // parse fucked up JSON into list
 
         return gameIDList;
     }
 
-    private HttpResponse getResponse (String... params){
-        HttpClient httpclient = HttpClients.createDefault();
-        try {
-            HttpPost httppost = new HttpPost(params[0]);
-            List<NameValuePair> nameValuePairs = new ArrayList<>(params.length);
-            for (int i = 2; i < params.length; i += 2)
-                nameValuePairs.add(new BasicNameValuePair(params[i], params[i+1]));
-            httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-            System.out.println("Sending post [ "+httppost.toString()+" ]");
-            return httpclient.execute(httppost);
-        } catch (IOException e) {
-            e.printStackTrace();
+    private class MailSend extends AsyncTask<String, Void, String> {
+        /**
+         * Make an HTTP POST request
+         *
+         * @param params first parameter will be assumed to be the URL, the following parameters will
+         *               be treated as key-value pairs to be sent in the request body
+         * @return
+         */
+        private HttpResponse getResponse(String... params) {
+            HttpClient httpclient = HttpClients.createDefault();
+            try {
+                HttpPost httppost = new HttpPost(params[0]);
+                System.out.println("Sending post [ " + httppost.toString() + " ]");
+                List<NameValuePair> nameValuePairs = new ArrayList<>(params.length);
+                System.out.print("With Keys [ ");
+                for (int i = 1; i < params.length; i += 2) {
+                    nameValuePairs.add(new BasicNameValuePair(params[i], params[i + 1]));
+                    System.out.format("%s=%s ", params[i], params[i+1]);
+                }
+                System.out.println("]");
+                httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+                System.out.print("With Headers [ ");
+                for (Header h : httppost.getAllHeaders())
+                    System.out.println(h.getName()+"::"+h.getValue()+" ");
+                System.out.println("]");
+                return httpclient.execute(httppost);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
         }
-        return null;
-    }
 
-    @Override
-    protected String doInBackground(String... params) {
-        try {
-            HttpResponse response = getResponse(params);
-            HttpEntity responseEntity = response.getEntity();
-            return EntityUtils.toString(responseEntity);
-        } catch (Exception e){
-            e.printStackTrace();
+        @Override
+        protected String doInBackground(String... params) {
+            try {
+                HttpResponse response = getResponse(params);
+                HttpEntity responseEntity = response.getEntity();
+                return EntityUtils.toString(responseEntity);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
         }
-        return null;
-    }
-
-    private String responseBody;
-    @Override
-    protected void onPostExecute(String result) {
-        responseBody = result;
     }
 }

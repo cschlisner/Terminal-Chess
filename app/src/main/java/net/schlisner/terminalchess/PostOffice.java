@@ -44,16 +44,47 @@ public class PostOffice {
     }
 
     /**
+     * Checks player into lobby where it will be matched with another player
+     *
+     * @return List of all games user is engaged in, by time created
+     */
+    public void checkIn(String uuid) {
+        MailSend checkIn = new MailSend();
+        checkIn.execute(Chives, "action", "checkin");
+    }
+
+    /**
+     * Checks player into lobby, looks for new game including player, returns game id
+     *
+     * @return game id of newly created game after checking player into lobby
+     */
+    public String joinNewGame(String uuid) throws Exception{
+        int gameCount = listGames(uuid).size();
+        MailSend checkIn = new MailSend();
+        checkIn.execute(Chives, "action", "checkin");
+        long t1 = System.currentTimeMillis();
+        while ((System.currentTimeMillis() - t1) < NETWORK_TIMEOUT_SECS*1000){
+            List<String> games = listGames(uuid);
+            if (games.size() > gameCount){
+                return games.get(games.size()-1);
+            }
+        }
+        throw new Exception("Network timeout");
+    }
+
+
+    /**
      * Lists all game IDs in ascending order of time created (newest game first)
      *
      * @return List of all games user is engaged in, by time created
      */
-    public List<String> listGames(String uuid) {
+    public List<String> listGames(String uuid) throws Exception{
         List<String> gameIDList = new ArrayList<>();
         MailSend getGameList = new MailSend();
-        getGameList.execute(Chives, "action", "retrieveGames");
+        String response = getGameList.execute(Chives, "action", "retrieveGames").get(NETWORK_TIMEOUT_SECS, TimeUnit.SECONDS);
 
-        // parse fucked up JSON into list
+        // idfk
+        String[] games = response.split("grhijuagrhiarhirghirhioragih ");
 
         return gameIDList;
     }

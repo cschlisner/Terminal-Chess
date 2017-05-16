@@ -20,6 +20,9 @@ import org.w3c.dom.Text;
 
 import java.util.concurrent.TimeoutException;
 
+import uniChess.Game;
+import uniChess.Player;
+
 public class MenuActivity extends AppCompatActivity {
     String uuid;
     PostOffice po;
@@ -35,8 +38,8 @@ public class MenuActivity extends AppCompatActivity {
 
         sharedPref = this.getPreferences(Context.MODE_PRIVATE);
         uuid = sharedPref.getString("uuid", "");
-        System.out.println("Registering user...");
         if (uuid == ""){
+            System.out.println("Registering user...");
             try {
                 uuid = po.register();
             } catch (Exception e){
@@ -48,6 +51,7 @@ public class MenuActivity extends AppCompatActivity {
             editor.commit();
             uuidView.setText(uuid);
         }
+        System.out.println(uuid);
         uuidView = (TextView) findViewById(R.id.uuidView);
         uuidView.setText(uuid);
         po = new PostOffice();
@@ -86,14 +90,30 @@ public class MenuActivity extends AppCompatActivity {
 
     // get list of games user is enganged in, display them in a list for them to choose from
     public void resumeGame(View view){
-
+        try {
+            String gameId = po.joinNewGame(uuid);
+            // Game contGame = po.getGame(gameId);
+            Intent intent = new Intent(this, GameActivity.class).putExtra("init_mode", "new")
+                    .putExtra("opponent", "network")
+//                    .putExtra("gamestring", contGame.getGameString())
+                    .putExtra("gameID", gameId);
+            startActivity(intent);
+        } catch (Exception e){
+            Toast.makeText(getApplicationContext(), "Network took too long", Toast.LENGTH_SHORT).show();
+        }
     }
 
     // join game lobby to get matched, start checking for a new game in gamelist and enter it
     public void startNewNetworkGame(View view){
-        Intent intent = new Intent(this, GameActivity.class).putExtra("init_mode", "new")
-                                                            .putExtra("opponent", "network");
-        startActivity(intent);
+        try {
+            String gameId = po.joinNewGame(uuid);
+            Intent intent = new Intent(this, GameActivity.class).putExtra("init_mode", "new")
+                                                                .putExtra("opponent", "network")
+                                                                .putExtra("gameID", gameId);
+            startActivity(intent);
+        } catch (Exception e){
+            Toast.makeText(getApplicationContext(), "Network took too long", Toast.LENGTH_SHORT).show();
+        }
     }
 
     public void startNewLocalGame(View view){

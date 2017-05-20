@@ -34,6 +34,7 @@ public class BoardView extends View {
     int contentHeight = getHeight() - paddingTop - paddingBottom;
 
     Board gameBoard = new Board();
+    boolean w = true;
 
     Paint paint = new Paint();
 

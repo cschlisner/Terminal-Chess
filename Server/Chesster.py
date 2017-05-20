@@ -33,9 +33,3 @@ r.db("chess").table("games").get(game_uuid).update({
   "moves" : r.row["moves"].append(move), 
   "w" : (not game["w"])
 }).run(conn)
-
-
-game = r.db("chess").table("games").get(game_uuid).run(conn)
-
-
-print (game)

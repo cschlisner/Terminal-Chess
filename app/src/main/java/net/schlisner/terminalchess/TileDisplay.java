@@ -3,8 +3,10 @@ package net.schlisner.terminalchess;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.DrawFilter;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.support.v4.content.ContextCompat;
 
 import java.util.ArrayList;
@@ -40,6 +42,7 @@ public class TileDisplay {
         tilePaint.setStyle(Paint.Style.STROKE);
         tilePaint.setAntiAlias(true);
         piecePaint.setAntiAlias(true);
+        piecePaint.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
 
         fillColor = (tile.color.equals(Game.Color.BLACK)) ? ContextCompat.getColor(context, R.color.chessBoardDark): ContextCompat.getColor(context, R.color.chessBoardLight);
 
@@ -103,6 +106,7 @@ public class TileDisplay {
             tilePaint.setStyle(Paint.Style.FILL);
             canvas.drawRect(x + sw, y + sw, x + dimensions - sw, y + dimensions - sw, tilePaint);
         }
+
         if (tile.getOccupator()!=null) {
             canvas.drawText(tile.getOccupator().getSymbol(), x+(0.16f*dimensions), y+dimensions-(0.2f*dimensions), piecePaint);
         }

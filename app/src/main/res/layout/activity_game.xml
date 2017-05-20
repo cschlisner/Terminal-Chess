@@ -1,27 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_height="match_parent"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:background="#161616"
+    android:layout_height="match_parent"
+    android:background="@android:color/background_dark"
     android:orientation="vertical"
     android:weightSum="1">
 
     <TextView
-        android:id="@+id/aiOutTextView"
+        android:id="@+id/deathRowOpponent"
         android:layout_width="291dp"
         android:layout_height="36dp"
-        android:layout_gravity="center_horizontal"
-        android:layout_weight="0.35"
-        android:text="TextView"
+        android:layout_above="@+id/boardviewer"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_gravity="center"
+        android:layout_weight="0.27"
+        android:fontFamily="serif-monospace"
+        android:paddingTop="20dp"
         android:textAlignment="center"
-        android:textColor="@color/chessPiecesLight" />
+        android:textAllCaps="false"
+        android:textColor="@color/chessBoardHighlight"
+        android:textStyle="bold" />
 
     <net.schlisner.terminalchess.BoardView
         android:id="@+id/boardviewer"
         android:layout_width="match_parent"
-        android:layout_height="409dp"
-        android:layout_gravity="center" />
+        android:layout_height="388dp"
+        android:layout_centerInParent="true"
+        android:foregroundGravity="center"/>
+
+    <TextView
+        android:id="@+id/deathRowUser"
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/boardviewer"
+        android:layout_gravity="center"
+        android:layout_weight="0.27"
+        android:fontFamily="serif-monospace"
+        android:paddingTop="20dp"
+        android:textAlignment="center"
+        android:textColor="@color/chessBoardHighlight"
+        android:textStyle="bold" />
 
 
-</LinearLayout>
+</RelativeLayout>

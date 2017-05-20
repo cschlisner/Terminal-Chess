@@ -1,5 +1,6 @@
 package uniChess;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -7,7 +8,7 @@ import java.util.ArrayList;
 *	An object for creating, maintaining, and communicating with a chess game.
 *
 */
-public class Game {
+public class Game implements Serializable{
 
 	/** Type that the Game object will return on game advancement */
 	public enum GameEvent {OK, AMBIGUOUS, INVALID, ILLEGAL, CHECK, CHECKMATE, STALEMATE, DRAW}
@@ -25,6 +26,9 @@ public class Game {
 	public static boolean useDarkChars = false;
 	
 	private boolean whiteMove = true;
+
+	/** Game Identifier */
+	public static String ID;
 
 	private String gameString = "";
 

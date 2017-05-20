@@ -109,7 +109,12 @@ public class Board {
 		return state;
 	}
 
-	private String displayDeathRow(Game.Color color){
+	/**
+	 * Get string of captured pieces of a certain color
+	 * @param color color of captured pieces
+	 * @return string of captured pieces in order of capture
+	 */
+	public String displayDeathRow(Game.Color color){
 		StringBuilder res = new StringBuilder();
 		res.append("   ");
 		for (Piece p : deathRow)

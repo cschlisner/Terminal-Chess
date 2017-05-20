@@ -1,0 +1,32 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="?android:attr/listPreferredItemHeight"
+    android:padding="6dip" >
+
+    <net.schlisner.terminalchess.BoardView
+        android:id="@+id/icon"
+        android:layout_width="50dp"
+        android:layout_height="fill_parent"
+        android:layout_alignParentTop="true"
+        android:contentDescription="TODO"
+        android:layout_alignParentBottom="true" />
+
+    <TextView
+        android:id="@+id/gameIDTextView"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignWithParentIfMissing="true"
+        android:fontFamily="serif-monospace"
+        android:gravity="center_vertical"
+        android:text="Example application"
+        android:textColor="@color/chessBoardHighlight"
+        android:paddingLeft="10dp"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:typeface="monospace"
+        android:layout_toRightOf="@+id/icon"
+        android:layout_toEndOf="@+id/icon" />
+
+</RelativeLayout>

@@ -8,109 +8,108 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ThreadFactory;
 
 import uniChess.*;
 
 public class GameActivity extends AppCompatActivity {
 
     Game chessGame;
+    PostOffice po = new PostOffice();
 
     Player<String> playerOne;
     Player<String> playerTwo;
 
-    UUID uuid;
+    String uuid;
+    boolean userIsWhite;
 
     String opponentType = "";
 
     BoardView boardView;
-    TextView statusView;
+    TextView deathRowOpponent;
+    TextView deathRowUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         ActionBar actionBar = getSupportActionBar();
         if (actionBar!=null) actionBar.hide();
 
         setContentView(R.layout.activity_game);
 
         boardView = (BoardView) findViewById(R.id.boardviewer);
-        statusView = (TextView) findViewById(R.id.aiOutTextView);
+        deathRowOpponent = (TextView) findViewById(R.id.deathRowOpponent);
+        deathRowUser = (TextView) findViewById(R.id.deathRowUser);
 
         Intent menuIntent = getIntent();
+
         opponentType = menuIntent.getStringExtra("opponent");
-        if (menuIntent.getStringExtra("init_mode").equals("new")){
-            // decide which colorz
-            boolean white = (new Random(System.currentTimeMillis())).nextBoolean();
-            switch (opponentType){
-                case "local":
-                    // both players interact with the game in the same way
-                    playerOne = new Player<>("WHITE", Game.Color.WHITE);
-                    playerTwo = new Player<>("BLACK", Game.Color.BLACK);
-                    break;
-                case "network":
-                    playerOne = new HTTPNetworkPlayer<>(uuid.toString(), white ? Game.Color.WHITE : Game.Color.BLACK);
+        boolean white = (new Random(System.currentTimeMillis())).nextBoolean();
+        boolean waitForNetMove = false;
+        switch (opponentType){
+            case "local":
+                // both players interact with the game in the same way
+                playerOne = new Player<>("WHITE", Game.Color.WHITE);
+                playerTwo = new Player<>("BLACK", Game.Color.BLACK);
+                break;
+            case "network":
+                try {
+                    uuid = menuIntent.getStringExtra("uuid");
+                    String gameJSONString = menuIntent.getStringExtra("gameJSON");
+                    JSONObject gameJSON = new JSONObject(gameJSONString);
+                    white = PostOffice.isWhite(gameJSON.getString("white_md5uuid"), uuid);
+                    waitForNetMove = white == !gameJSON.getBoolean("w");
 
-                    statusView.setText(uuid.toString());
+                    if (gameJSON.getJSONArray("moves").length() == 0)
+                        Toast.makeText(getApplicationContext(), String.format("You will be playing as %s", white ? "white" : "black"), Toast.LENGTH_SHORT).show();
 
-                    playerTwo = ((HTTPNetworkPlayer)playerOne).findOpponent();
-
-                    if (!white) {
-                        boardView.flipBoard();
-                        // find other player in db and create game
-//                        r.db("chess").table('games').insert({
-//                                "id": "test",
-//                                "player_to_move": "WHITE",
-//                                "moves": []
-//                        })
-                    }
-                    break;
-                case "ai":
-                    Toast.makeText(getApplicationContext(), String.format("You will be playing as %s", white ? "white" : "black"), Toast.LENGTH_SHORT).show();
-
-                    playerTwo = white ? new Chesster<>("BLACK", Game.Color.BLACK)
-                                        : new Player<>("BLACK", Game.Color.BLACK);
-                    playerOne = white ? new Player<>("WHITE", Game.Color.WHITE)
-                                        : new Chesster<>("WHITE", Game.Color.WHITE);
-
-                    break;
-            }
-
-            chessGame = new uniChess.Game(playerOne, playerTwo);
-
+                    chessGame = PostOffice.JSONToGame(gameJSON);
+                } catch (Exception e){
+                    Toast.makeText(getApplicationContext(), String.format("Could not initialize game. Your opponent is likely hacking."), Toast.LENGTH_SHORT).show();
+                }
+                break;
+            case "ai":
+                Toast.makeText(getApplicationContext(), String.format("You will be playing as %s", white ? "white" : "black"), Toast.LENGTH_SHORT).show();
+                playerTwo = white ? new Chesster<>("BLACK", Game.Color.BLACK)
+                                    : new Player<>("BLACK", Game.Color.BLACK);
+                playerOne = white ? new Player<>("WHITE", Game.Color.WHITE)
+                                    : new Chesster<>("WHITE", Game.Color.WHITE);
+                break;
         }
-        else if (menuIntent.getStringExtra("init_mode").equals("resume")){
-            // load saved uniChess.GameActivity
-            String gameString = "actually_load_a_saved_thing_here";
-
-            playerTwo = new Player<>("BLACK", Game.Color.BLACK);
-            playerOne = new Player<>("WHITE", Game.Color.WHITE);
-            chessGame = new uniChess.Game(playerOne, playerTwo, gameString);
-        }
-
-        else chessGame = new uniChess.Game(playerOne, playerTwo, menuIntent.getStringExtra("FRESH_MEMES"));
-
-        //uniChess.Game.useDarkChars = true;
 
         boardView.setBoard(chessGame.getCurrentBoard());
-
-        statusView.setText(opponentType);
-
+        deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(white ? Game.Color.BLACK : Game.Color.WHITE));
+        deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(white ? Game.Color.WHITE : Game.Color.BLACK));
         boardView.updateValidMoves();
+        boardView.w = chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE);
+
+
+        userIsWhite = white;
+
+        if (!white)
+            boardView.flipBoard();
 
         boardView.setOnTouchListener(new View.OnTouchListener() {
             int rank, file;
             @Override
             public boolean onTouch(View v, MotionEvent e) {
+                BoardView bV = (BoardView) v;
+                if (opponentType.equals("network") && (userIsWhite ^ bV.w))
+                    getNetOpponentMove(chessGame.ID);
                 if (v instanceof BoardView) {
-                    BoardView bV = (BoardView) v;
+
                     float x = e.getX();
                     float y = e.getY();
                     switch (e.getAction()) {
@@ -128,11 +127,35 @@ public class GameActivity extends AppCompatActivity {
                 return true;
             }
         });
+
+//        if (waitForNetMove) {
+//            getNetOpponentMove(chessGame.ID);
+//        }
+    }
+
+    private boolean isUserTurn(){
+        return !(userIsWhite ^ chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE));
+    }
+
+    // probably want to convert this to a service eventually
+    private long timeout = 10000;
+    private void getNetOpponentMove(String gameID){
+        chessGame = PostOffice.refreshGame(gameID);
+        if (chessGame != null) {
+            boardView.setBoard(chessGame.getCurrentBoard());
+            boardView.w = chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE);
+            boardView.updateValidMoves();
+            deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
+            deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
+        }
     }
 
     private void gameAdvance(String in){
         Game.GameEvent gameResponse = chessGame.advance(in);
         boardView.setBoard(chessGame.getCurrentBoard());
+        boardView.w = chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE);
+        deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
+        deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
 
         String responseMove = null;
         switch(gameResponse){
@@ -149,9 +172,8 @@ public class GameActivity extends AppCompatActivity {
                         break;
 
                     case "network":
-                        ((HTTPNetworkPlayer)chessGame.getDormantPlayer()).sendMoveAN(in);
-                        Toast.makeText(getApplicationContext(), "Waiting for opponent...", Toast.LENGTH_SHORT).show();
-                        //responseMove = ((HTTPNetworkPlayer)chessGame.getCurrentPlayer()).getMoveAN();
+                        // send move through post office
+                        po.sendMove(in, uuid, chessGame.ID);
                         break;
 
                     case "ai":

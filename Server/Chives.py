@@ -8,6 +8,9 @@ import time
 import hashlib
 print ("Content-type:text/html\r\n\r\n")
 
+def convert_to_json_because_rethinkdb_sucks(response):
+	return response.replace("\'","\"").replace("True","true").replace("False","false")
+
 def find_opponent():
 	return r.db("chess").table("users").filter({"online":true, "ingame" : false}).nth(0).getField("id").run(conn)
 
@@ -55,8 +58,12 @@ elif action == 'checkout':
 	player = form["uuid"].value
 	checkout(player)
 
+elif action == 'getgame':
+	game_uuid = form["game"].value
+	game = r.db("chess").table("games").get(game_uuid).run(conn)
+	print(convert_to_json_because_rethinkdb_sucks(str(game)))
+
 elif action == 'retrievegames':
 	player = form["uuid"].value
 	cursor = find_games(player)
-	for doc in cursor:
-		print(doc)
+	print(convert_to_json_because_rethinkdb_sucks(str(cursor)))

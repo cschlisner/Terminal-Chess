@@ -151,6 +151,39 @@ public class Game implements Serializable{
 	}
 
 	/**
+	 * Converts single character representations of pieces to unicode representation.
+	 * lowercase is mapped to white pieces and uppercase is mapped to black pieces.
+	 * i.e.
+	 * "p" -> ♙
+	 * "Q" -> ♛
+	 * @param p letter to convert
+	 * @return unicode representation of p, null if character is not one of [p,q,r,n,b,k]
+	 */
+	public static String getUnicode(char p){
+		int[] unicodeChars;
+		if (Character.isUpperCase(p))
+			unicodeChars = new int[]{9823,9820,9822,9821,9819,9818};
+		else unicodeChars = new int[]{9817,9814,9816,9815,9813,9812};
+
+		switch (Character.toLowerCase(p)){
+			case 'p':
+				return new String(Character.toChars(unicodeChars[0]));
+			case 'r':
+				return new String(Character.toChars(unicodeChars[1]));
+			case 'n':
+				return new String(Character.toChars(unicodeChars[2]));
+			case 'b':
+				return new String(Character.toChars(unicodeChars[3]));
+			case 'q':
+				return new String(Character.toChars(unicodeChars[4]));
+			case 'k':
+				return new String(Character.toChars(unicodeChars[5]));
+			default:
+				return null;
+		}
+	}
+
+	/**
 	*	<p>
 	*	Attempts to advance the game by one move specified by the supplied algebraic
 	*	notation string. If the move is valid, legal, and does not put the other 

@@ -31,6 +31,33 @@ public class Piece {
 	/** Indicates whether this piece is uner attack*/
 	public Move attackingMove = null;
 
+	/**
+	 * Creates new Piece from single char where uppercase is mapped to black pieces and lowercase
+	 * is mapped to white
+	 * @param character
+	 */
+	public static Piece synthesizePiece(char character){
+		Game.Color color = Game.Color.WHITE;
+		if (Character.isUpperCase(character))
+			color = Game.Color.BLACK;
+		switch (Character.toLowerCase(character)) {
+			case 'p':
+				return new Piece(color, Game.PieceType.PAWN);
+			case 'r':
+				return new Piece(color, Game.PieceType.ROOK);
+			case 'n':
+				return new Piece(color, Game.PieceType.KNIGHT);
+			case 'b':
+				return new Piece(color, Game.PieceType.BISHOP);
+			case 'q':
+				return new Piece(color, Game.PieceType.QUEEN);
+			case 'k':
+				return new Piece(color, Game.PieceType.KING);
+			default:
+				return null;
+		}
+	}
+
 	public Piece(Piece other){
 		this(other.color, other.type);
 		this.moves.addAll(other.moves);

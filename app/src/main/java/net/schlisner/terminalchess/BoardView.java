@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import org.json.JSONObject;
 import org.w3c.dom.Attr;
 
 import java.util.ArrayList;
@@ -34,7 +35,6 @@ public class BoardView extends View {
     int contentHeight = getHeight() - paddingTop - paddingBottom;
 
     Board gameBoard = new Board();
-    boolean w = true;
 
     Paint paint = new Paint();
 
@@ -78,6 +78,12 @@ public class BoardView extends View {
         }
     }
 
+    public void setMonochrome(boolean isIcon){
+        for (TileDisplay[] tda : tileDisplays)
+            for (TileDisplay td : tda)
+                td.monochrome = isIcon;
+    }
+
     public void updateValidMoves(){
         List<TileDisplay> validDestinations = new ArrayList<>();
         for (TileDisplay[] tda : tileDisplays){
@@ -118,7 +124,7 @@ public class BoardView extends View {
         TileDisplay selectedTile = tileDisplays[rank][file];
 
         if (currentlySelected != null && currentlySelected.getValidDestinations().contains(selectedTile)){
-            selectedTile.virtualOccupator = currentlySelected.tile.getOccupator();
+            selectedTile.virtualOccupator = currentlySelected.tile.getOccupator().getSymbol();
 //            currentlySelected.tile.setOccupator(null);
             currentlySelected.deselect();
 
@@ -137,5 +143,26 @@ public class BoardView extends View {
 
         invalidate();
         return null;
+    }
+
+    /**
+     * Set the piece positions of this board according to the layout defined in a JSONObject
+     * representation of a game
+     * @param jsonGame the game of which to set the layout to
+     */
+    public void setLayout(JSONObject jsonGame) {
+        // layout stored in a "layout" field as 64 characters - one for each tile starting at
+        // a8 and going through each rank (horizontally) to h1
+        try {
+            String boardlayout = jsonGame.getString("layout");
+            for (int i = 0; i < 64; ++i){
+                int y = i/8, x = i <=7 ? i : i - 8 * y;
+                if (boardlayout.charAt(i) != '.')
+                    gameBoard.getTile(x,y).setOccupator(Piece.synthesizePiece(boardlayout.charAt(i)));
+                else gameBoard.getTile(x,y).setOccupator(null);
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+        }
     }
 }

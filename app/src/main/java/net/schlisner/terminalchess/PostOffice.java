@@ -83,7 +83,7 @@ public class PostOffice {
      * @return List of all games user is engaged in, by time created
  * @param uuid
      */
-    public static List<JSONObject> listGamesJSON(String uuid) throws Exception {
+    public static JSONArray listGamesJSON(String uuid) throws Exception {
         return listGamesJSON(uuid, null);
     }
 
@@ -92,18 +92,12 @@ public class PostOffice {
      *
      * @return List of all games user is engaged in, by time created
      */
-    public static List<JSONObject> listGamesJSON(String uuid, MailCallback mcb) throws Exception{
+    public static JSONArray listGamesJSON(String uuid, MailCallback mcb) throws Exception{
         uuid = uuid.trim();
-        List<JSONObject> gameList = new ArrayList<>();
         MailSend getGameList = mcb == null ? new MailSend() : new MailSend(mcb);
         String response = getGameList.execute(Chives, "action", "retrievegames", "uuid", uuid)
                 .get(NETWORK_TIMEOUT_SECS, TimeUnit.SECONDS);
-        System.out.println("RESPONSE:"+response);
-        JSONArray gameArray = new JSONArray(response);
-        for (int i = 0; i < gameArray.length(); ++i){
-            gameList.add(gameArray.optJSONObject(i));
-        }
-        return gameList;
+        return new JSONArray(response);
     }
 
     /**
@@ -140,9 +134,11 @@ public class PostOffice {
         for (int i = 0; i < jsonmoves.length(); ++i)
             gamestr += jsonmoves.optString(i) + ",";
         Game g;
+        long t1 = System.currentTimeMillis();
         if (!gamestr.equals(""))
             g = new Game(new Player<>(whiteID, Game.Color.WHITE), new Player<>(blackID, Game.Color.BLACK), gamestr);
         else g = new Game(new Player<>(whiteID, Game.Color.WHITE), new Player<>(blackID, Game.Color.BLACK));
+        System.out.println("instantiate game : "+(System.currentTimeMillis() - t1));
         g.ID = jsonGame.optString("id");
         return g;
     }
@@ -210,7 +206,7 @@ public class PostOffice {
             arguments = args;
         }
         public abstract void before();
-        public abstract void after();
+        public abstract void after(String s);
     }
 
     public static class MailSend extends AsyncTask<String, Void, String> {
@@ -237,7 +233,7 @@ public class PostOffice {
                 }
                 httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
                 return httpclient.execute(httppost);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             return null;
@@ -266,7 +262,7 @@ public class PostOffice {
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
             if (callback != null)
-                callback.after();
+                callback.after(s);
         }
     }
 }

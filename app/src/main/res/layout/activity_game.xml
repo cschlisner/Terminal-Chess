@@ -30,7 +30,7 @@
         android:layout_width="match_parent"
         android:layout_height="388dp"
         android:layout_centerInParent="true"
-        android:foregroundGravity="center"/>
+        android:foregroundGravity="center" />
 
     <TextView
         android:id="@+id/deathRowUser"

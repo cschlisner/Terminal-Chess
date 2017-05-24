@@ -35,18 +35,9 @@ class ChessGameListAdapter extends ArrayAdapter<JSONObject> {
         TextView textView = (TextView) rowView.findViewById(R.id.gameIDTextView);
         BoardView icon = (BoardView) rowView.findViewById(R.id.icon);
         final JSONObject game = gamesJSON.get(position);
-        final BoardView bv = icon;
         textView.setText(game.optString("id"));
-        new AsyncTask<JSONObject, Void, Board>(){
-            @Override
-            public Board doInBackground(JSONObject... params){
-                return PostOffice.JSONToGame(params[0]).getCurrentBoard();
-            }
-            @Override
-            public void onPostExecute(Board b){
-                bv.setBoard(b);
-            }
-        }.execute(game);
+        icon.setLayout(game);
+        icon.setMonochrome(true);
         return rowView;
     }
 }

@@ -22,11 +22,12 @@ def find_opponent():
 def create_game(player_one, player_two):
 	w = random.choice([True, False])
 	return r.db("chess").table('games').insert({
-	  "uts" : int(time.time()),
-	  "white_md5uuid" : hex_digest(player_one) if w else hex_digest(player_two),
-	  "black_md5uuid" : hex_digest(player_two) if w else hex_digest(player_one),
-	  "w": True,
-	  "moves": []
+		"layout" : "RNBKQBNRPPPPPPPP................................pppppppprnbkqbnr",
+		"uts" : int(time.time()),
+		"white_md5uuid" : hex_digest(player_one) if w else hex_digest(player_two),
+		"black_md5uuid" : hex_digest(player_two) if w else hex_digest(player_one),
+		"w": True,
+		"moves": []
 	}).run(conn)["generated_keys"][0]
 	
 conn = r.connect('localhost', 28015).repl()

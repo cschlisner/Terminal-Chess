@@ -10,6 +10,7 @@
         android:id="@+id/swiperefresh"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
         <ListView
             android:id="@+id/gameListView"
             android:layout_width="match_parent"
@@ -17,7 +18,7 @@
             android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
             android:layout_alignParentTop="true"
-            android:background="@color/chessPiecesDark"
+            android:background="@color/colorPrimary"
             tools:layout_editor_absoluteX="0dp"
             tools:layout_editor_absoluteY="0dp" />
     </android.support.v4.widget.SwipeRefreshLayout>

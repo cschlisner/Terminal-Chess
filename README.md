@@ -1,4 +1,7 @@
 # Terminal-Chess
+![icon](http://i.imgur.com/xT7X3x9.png)
+
+
 Android implementation of https://cschlisner.github.io/uniChess
 
 

@@ -90,7 +90,7 @@ public class ResumeGameActivity extends AppCompatActivity {
                 savedGameJSONList = new ArrayList<>();
                 for (int i = 0; i < savedGameArray.length(); ++i)
                     savedGameJSONList.add(savedGameArray.getJSONObject(i));
-                ChessGameListAdapter cgla = new ChessGameListAdapter(getApplicationContext(), savedGameJSONList);
+                ChessGameListAdapter cgla = new ChessGameListAdapter(getApplicationContext(), savedGameJSONList, uuid);
                 gameList.setAdapter(cgla);
             } catch (Exception e){
                 e.printStackTrace();
@@ -129,7 +129,7 @@ public class ResumeGameActivity extends AppCompatActivity {
                         List<JSONObject> gamesJSONList = new ArrayList<>();
                         for (int i = 0; i < gamesJSON.length(); ++i)
                             gamesJSONList.add(gamesJSON.getJSONObject(i));
-                        ChessGameListAdapter cgla = new ChessGameListAdapter(appContext, gamesJSONList);
+                        ChessGameListAdapter cgla = new ChessGameListAdapter(appContext, gamesJSONList, uuid);
                         gameList.setAdapter(cgla);
                         System.out.println("Updated games from network");
                     } catch (Exception e){

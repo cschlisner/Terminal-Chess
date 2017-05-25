@@ -27,6 +27,7 @@
 
     <net.schlisner.terminalchess.BoardView
         android:id="@+id/boardviewer"
+        style="@style/AppTheme.meme"
         android:layout_width="match_parent"
         android:layout_height="388dp"
         android:layout_centerInParent="true"

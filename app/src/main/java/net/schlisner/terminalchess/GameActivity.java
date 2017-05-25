@@ -3,6 +3,7 @@ package net.schlisner.terminalchess;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -26,7 +27,6 @@ import uniChess.*;
 public class GameActivity extends AppCompatActivity {
 
     Game chessGame;
-    PostOffice po = new PostOffice();
 
 
     String uuid;
@@ -68,16 +68,10 @@ public class GameActivity extends AppCompatActivity {
                 break;
             case "network":
                 try {
-                    System.out.println("IN NETWORK SETUP: "+(System.currentTimeMillis() - t1));
                     uuid = menuIntent.getStringExtra("uuid");
                     String gameJSONString = menuIntent.getStringExtra("gameJSON");
-                    JSONObject gameJSON = new JSONObject(gameJSONString);
+                    gameJSON = new JSONObject(gameJSONString);
                     white = PostOffice.isWhite(gameJSON.getString("white_md5uuid"), uuid);
-
-                    if (gameJSON.getJSONArray("moves").length() == 0) {
-                        Toast.makeText(getApplicationContext(), String.format("You will be playing as %s", white ? "white" : "black"), Toast.LENGTH_SHORT).show();
-                    }
-
                     chessGame = PostOffice.JSONToGame(gameJSON);
                 } catch (Exception e){
                     Toast.makeText(getApplicationContext(), String.format("Could not initialize game. Your opponent is likely hacking."), Toast.LENGTH_SHORT).show();
@@ -93,21 +87,12 @@ public class GameActivity extends AppCompatActivity {
                 break;
         }
 
-        boardView.setBoard(chessGame.getCurrentBoard());
-        deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(white ? Game.Color.BLACK : Game.Color.WHITE));
-        deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(white ? Game.Color.WHITE : Game.Color.BLACK));
-        boardView.updateValidMoves();
-
-
         userIsWhite = white;
-
-        if (!white)
-            boardView.flipBoard();
 
         boardView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent e) {
-                if (v instanceof BoardView) {
+                if ((userIsWhite ^ chessGame.getCurrentPlayer().color.equals(Game.Color.BLACK)) && v instanceof BoardView) {
                     BoardView bV = (BoardView) v;
                     float x = e.getX();
                     float y = e.getY();
@@ -126,7 +111,37 @@ public class GameActivity extends AppCompatActivity {
                 return true;
             }
         });
+    }
+    private JSONObject gameJSON;
+    @Override
+    public void onResume(){
+        super.onResume();
+        if (gameJSON != null) {
+            final JSONObject fJSON = gameJSON;
+            new AsyncTask<JSONObject, Void, Void>() {
+                @Override
+                protected void onPreExecute() {
+                    boardView.setLayout(fJSON);
+                    if (!userIsWhite)
+                        boardView.flipBoard();
+                }
 
+                @Override
+                protected Void doInBackground(JSONObject[] params) {
+                    chessGame = PostOffice.JSONToGame(params[0]);
+                    return null;
+                }
+
+                @Override
+                protected void onPostExecute(Void res) {
+                    boardView.playGame(gameJSON, chessGame);
+                    boardView.setBoard(chessGame.getCurrentBoard());
+                    deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
+                    deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
+                    boardView.updateValidMoves();
+                }
+            }.execute(gameJSON);
+        }
     }
 
     private void gameAdvance(String in){
@@ -149,7 +164,8 @@ public class GameActivity extends AppCompatActivity {
 
                     case "network":
                         // send move through post office
-                        po.sendMove(in, uuid, chessGame.ID);
+                        PostOffice.sendMove(in, uuid, chessGame.ID, boardView.getLayout());
+
                         break;
                 }
                 break;

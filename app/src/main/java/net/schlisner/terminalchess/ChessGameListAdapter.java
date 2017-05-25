@@ -22,9 +22,11 @@ import uniChess.Game;
 
 class ChessGameListAdapter extends ArrayAdapter<JSONObject> {
     List<JSONObject> gamesJSON;
-    public ChessGameListAdapter(Context c, List<JSONObject> glist){
+    String uuid;
+    public ChessGameListAdapter(Context c, List<JSONObject> glist, String uuid){
         super(c, -1, glist);
         gamesJSON = glist;
+        this.uuid = uuid;
     }
 
     @Override
@@ -35,6 +37,10 @@ class ChessGameListAdapter extends ArrayAdapter<JSONObject> {
         TextView textView = (TextView) rowView.findViewById(R.id.gameIDTextView);
         BoardView icon = (BoardView) rowView.findViewById(R.id.icon);
         final JSONObject game = gamesJSON.get(position);
+        try {
+            if (!PostOffice.isWhite(game.getString("white_md5uuid"), uuid))
+                icon.flipBoard();
+        } catch (Exception e){}
         textView.setText(game.optString("id"));
         icon.setLayout(game);
         icon.setMonochrome(true);

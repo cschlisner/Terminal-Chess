@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.w3c.dom.Attr;
 
@@ -158,11 +159,37 @@ public class BoardView extends View {
             for (int i = 0; i < 64; ++i){
                 int y = i/8, x = i <=7 ? i : i - 8 * y;
                 if (boardlayout.charAt(i) != '.')
-                    gameBoard.getTile(x,y).setOccupator(Piece.synthesizePiece(boardlayout.charAt(i)));
-                else gameBoard.getTile(x,y).setOccupator(null);
+                    gameBoard.getTile(x,7-y).setOccupator(Piece.synthesizePiece(boardlayout.charAt(i)));
+                else gameBoard.getTile(x,7-y).setOccupator(null);
             }
+            initTiles();
         } catch (Exception e){
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Gets the piece positions of this board
+     * representation of a game
+     */
+    public String getLayout() {
+        // layout stored in a "layout" field as 64 characters - one for each tile starting at
+        // a8 and going through each rank (horizontally) to h1
+        String boardlayout = "";
+        for (int i = 0; i < 64; ++i){
+            int y = i/8, x = i <=7 ? i : i - 8 * y;
+            if (gameBoard.getTile(x,7-y).getOccupator() != null)
+                boardlayout += gameBoard.getTile(x,7-y).getOccupator().getSymbol(false);
+            else boardlayout += ".";
+        }
+        return boardlayout;
+    }
+
+    public void playGame(JSONObject gameJSONString, Game game) {
+        JSONArray jsonmoves = gameJSONString.optJSONArray("moves");
+        for (int i = 0; i < jsonmoves.length(); ++i) {
+            game.advance(jsonmoves.optString(i));
+            this.setBoard(game.getCurrentBoard());
         }
     }
 }

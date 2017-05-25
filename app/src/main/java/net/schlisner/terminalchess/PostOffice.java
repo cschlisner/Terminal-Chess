@@ -129,15 +129,12 @@ public class PostOffice {
     public static Game JSONToGame(JSONObject jsonGame){
         String whiteID = jsonGame.optString("white_md5uuid");
         String blackID = jsonGame.optString("black_md5uuid");
-        JSONArray jsonmoves = jsonGame.optJSONArray("moves");
-        String gamestr = "";
-        for (int i = 0; i < jsonmoves.length(); ++i)
-            gamestr += jsonmoves.optString(i) + ",";
+
         Game g;
         long t1 = System.currentTimeMillis();
-        if (!gamestr.equals(""))
-            g = new Game(new Player<>(whiteID, Game.Color.WHITE), new Player<>(blackID, Game.Color.BLACK), gamestr);
-        else g = new Game(new Player<>(whiteID, Game.Color.WHITE), new Player<>(blackID, Game.Color.BLACK));
+        //if (!gamestr.equals(""))
+            g = new Game(new Player<>(whiteID, Game.Color.WHITE), new Player<>(blackID, Game.Color.BLACK));
+       // else g = new Game(new Player<>(whiteID, Game.Color.WHITE), new Player<>(blackID, Game.Color.BLACK));
         System.out.println("instantiate game : "+(System.currentTimeMillis() - t1));
         g.ID = jsonGame.optString("id");
         return g;
@@ -149,9 +146,9 @@ public class PostOffice {
      * @param uuid uuid of user
      * @param gameID uuid of game
      */
-    public static void sendMove(String move, String uuid, String gameID){
+    public static void sendMove(String move, String uuid, String gameID, String layout){
         MailSend moveMail = new MailSend();
-        moveMail.execute(Chesster, "move", move, "uuid", uuid, "game", gameID);
+        moveMail.execute(Chesster, "move", move, "uuid", uuid, "game", gameID, "layout", layout);
     }
 
     public static JSONObject refreshGameJSON(String gameID) {

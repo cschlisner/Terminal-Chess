@@ -110,7 +110,7 @@ public class Piece {
 				
 				break;
 		}
-		if (c.equals(Game.Color.BLACK))
+		if (c.equals(Game.Color.WHITE))
 			this.symbol = this.symbol.toLowerCase();
 	}
 

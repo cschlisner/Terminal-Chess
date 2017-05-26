@@ -185,11 +185,4 @@ public class BoardView extends View {
         return boardlayout;
     }
 
-    public void playGame(JSONObject gameJSONString, Game game) {
-        JSONArray jsonmoves = gameJSONString.optJSONArray("moves");
-        for (int i = 0; i < jsonmoves.length(); ++i) {
-            game.advance(jsonmoves.optString(i));
-            this.setBoard(game.getCurrentBoard());
-        }
-    }
 }

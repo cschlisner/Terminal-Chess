@@ -40,17 +40,41 @@ public class Game implements Serializable{
 	*	Creates a new Game between the supplied players starting from the gamestate
 	*	supplied through the gameString. This allows a game to be continued from 
 	*	a specific state. (See {@link #getGameString() getGameString} method).
-	*
+ 	*
+	*	Note: this will not check the legality of these moves. If an invalid move
+	*	is supplied in the gamestring then it will be made regardless. If a parsing error
+ 	*	occurs, the game will stop at the move previous to the inparsable move.
+ 	*
 	*	@param player1 The first player
 	*	@param player2 The second player
 	*	@param gameString The series of moves to be performed
 	*	before the game starts.
 	*/
 	public Game(Player player1, Player player2, String gameString){
-		this(player1, player2);
-		
-		for (String move : gameString.split(","))
-			advance(move);
+		white = (player1.color.equals(Color.WHITE) ? player1 : player2);
+		black = (player1.color.equals(Color.WHITE) ? player2 : player1);
+
+		if (white instanceof Chesster)
+			((Chesster)white).registerGame(this);
+		if (black instanceof Chesster)
+			((Chesster)black).registerGame(this);
+
+		boards.add(new Board());
+
+
+		for (String in : gameString.split(",")){
+			Move move;
+			try {
+				move = Move.parseMove(getCurrentBoard(), getCurrentPlayer().color, in);
+			} catch (Exception e){
+				return;
+			}
+			boards.add(move.getSimulation());
+
+			whiteMove = !whiteMove;
+
+			this.gameString += move.getANString()+",";
+		}
 	}
 	
 	/** 

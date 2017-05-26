@@ -130,12 +130,22 @@ public class PostOffice {
         String whiteID = jsonGame.optString("white_md5uuid");
         String blackID = jsonGame.optString("black_md5uuid");
 
+        String gameStr = "";
+
+        JSONArray moves = jsonGame.optJSONArray("moves");
+
+        for (int i = 0; i < moves.length(); ++i)
+            gameStr += moves.optString(i)+",";
+
         Game g;
         long t1 = System.currentTimeMillis();
-        //if (!gamestr.equals(""))
-            g = new Game(new Player<>(whiteID, Game.Color.WHITE), new Player<>(blackID, Game.Color.BLACK));
-       // else g = new Game(new Player<>(whiteID, Game.Color.WHITE), new Player<>(blackID, Game.Color.BLACK));
+
+        if (!gameStr.equals(""))
+            g = new Game(new Player<>(whiteID, Game.Color.WHITE), new Player<>(blackID, Game.Color.BLACK), gameStr);
+        else g = new Game(new Player<>(whiteID, Game.Color.WHITE), new Player<>(blackID, Game.Color.BLACK));
+
         System.out.println("instantiate game : "+(System.currentTimeMillis() - t1));
+
         g.ID = jsonGame.optString("id");
         return g;
     }

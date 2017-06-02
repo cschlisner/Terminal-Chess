@@ -2,7 +2,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/background_dark"
+    android:background="@android:color/black"
     android:orientation="vertical"
     android:weightSum="1">
 
@@ -15,7 +15,6 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
         android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
         android:layout_gravity="center"
         android:layout_weight="0.27"
         android:fontFamily="serif-monospace"
@@ -37,7 +36,6 @@
         android:id="@+id/deathRowUser"
         android:layout_width="match_parent"
         android:layout_height="36dp"
-        android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:layout_below="@+id/boardviewer"
@@ -48,6 +46,32 @@
         android:textAlignment="center"
         android:textColor="@color/chessBoardHighlight"
         android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/statusBarUser"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/deathRowUser"
+        android:textAlignment="center"
+        android:textColor="@color/chessBoardHighlight" />
+
+    <TextView
+        android:id="@+id/statusBarOpponent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/deathRowOpponent"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:fontFamily="monospace"
+        android:textAlignment="center"
+        android:textAllCaps="false"
+        android:textColor="@color/chessBoardHighlight"
+        android:typeface="monospace" />
 
 
 </RelativeLayout>

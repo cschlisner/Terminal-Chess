@@ -1,5 +1,6 @@
 package net.schlisner.terminalchess;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -13,7 +14,10 @@ import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -27,24 +31,25 @@ import uniChess.*;
 public class GameActivity extends AppCompatActivity {
 
     Game chessGame;
-    public static long time_of_touch;
-
-    String uuid;
-    boolean userIsWhite, waitingForOpponent;
-
-    String opponentType = "";
-    String gameJSONString;
-
     private JSONObject gameJSON;
 
+    private BroadcastReceiver broadcastReceiver;
+    String uuid;
+
+    boolean userIsWhite, waitingForOpponent;
+    String opponentType = "";
+
+    String gameJSONString;
     BoardView boardView;
     TextView deathRowOpponent;
-
+    TextView statusBarOpponent;
     TextView deathRowUser;
+    TextView statusBarUser;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Fullscreen everything
         super.onCreate(savedInstanceState);
-        long t1 = System.currentTimeMillis();
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         ActionBar actionBar = getSupportActionBar();
         if (actionBar!=null) actionBar.hide();
@@ -52,8 +57,12 @@ public class GameActivity extends AppCompatActivity {
         setContentView(R.layout.activity_game);
 
         boardView = (BoardView) findViewById(R.id.boardviewer);
+
         deathRowOpponent = (TextView) findViewById(R.id.deathRowOpponent);
+        statusBarOpponent = (TextView) findViewById(R.id.statusBarOpponent);
+
         deathRowUser = (TextView) findViewById(R.id.deathRowUser);
+        statusBarUser = (TextView) findViewById(R.id.statusBarUser);
 
         Intent menuIntent = getIntent();
 
@@ -69,7 +78,7 @@ public class GameActivity extends AppCompatActivity {
         boardView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent e) {
-                if ((userIsWhite ^ chessGame.getCurrentPlayer().color.equals(Game.Color.BLACK)) && v instanceof BoardView) {
+                if (!waitingForOpponent && v instanceof BoardView) {
                     BoardView bV = (BoardView) v;
                     float x = e.getX();
                     float y = e.getY();
@@ -89,12 +98,49 @@ public class GameActivity extends AppCompatActivity {
             }
         });
 
+        broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String updatedGameJSON = intent.getStringExtra(GameUpdateService.GAME_UPDATE);
+
+                try {
+                    gameJSON = new JSONObject(updatedGameJSON);
+                    waitingForOpponent =  gameJSON.getBoolean("w") ^ userIsWhite;
+                    statusBarOpponent.setText(waitingForOpponent ? "Waiting for input..." : "");
+                    statusBarUser.setText(waitingForOpponent ? "" : "Waiting for input...");
+                    new AsyncTask<JSONObject, Void, Void>() {
+                        @Override
+                        protected Void doInBackground(JSONObject[] params) {
+                            chessGame = PostOffice.JSONToGame(params[0]);
+                            return null;
+                        }
+
+                        @Override
+                        protected void onPostExecute(Void res) {
+                            boardView.setBoard(chessGame.getCurrentBoard());
+                            deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
+                            deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
+                            boardView.updateValidMoves();
+                        }
+                    }.execute(gameJSON);
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        };
+
     }
 
     @Override
     public void onStart(){
         super.onStart();
 
+    }
+
+    @Override
+    public void onPause(){
+        super.onPause();
+        waitingForOpponent = false;
     }
 
     @Override
@@ -111,12 +157,11 @@ public class GameActivity extends AppCompatActivity {
                     break;
                 case "network":
                     try {
-
-
-
                         userIsWhite = PostOffice.isWhite(gameJSON.getString("white_md5uuid"), uuid);
                         waitingForOpponent =  gameJSON.getBoolean("w") ^ userIsWhite;
-                        final JSONObject fJSON = gameJSON;
+                        statusBarOpponent.setText(waitingForOpponent ? "Waiting for input..." : "");
+                        statusBarUser.setText(waitingForOpponent ? "" : "Waiting for input...");
+
                         new AsyncTask<JSONObject, Void, Void>() {
                             @Override
                             protected Void doInBackground(JSONObject[] params) {
@@ -169,9 +214,22 @@ public class GameActivity extends AppCompatActivity {
                         break;
 
                     case "network":
-                        // send move through post office
-                        PostOffice.sendMove(in, uuid, chessGame.ID, boardView.getLayout());
-                        waitingForOpponent = true;
+                        // send move through post office if the user entered a move
+                        if (!waitingForOpponent) {
+                            PostOffice.sendMove(in, uuid, chessGame.ID, boardView.getLayout(), new PostOffice.MailCallback() {
+                                @Override
+                                public void before() {
+
+                                }
+
+                                @Override
+                                public void after(String s) {
+                                    waitingForOpponent = true;
+                                    // start gameUpdateService
+                                }
+                            });
+                        }
+                        else waitingForOpponent = false;
                         break;
                 }
                 break;

@@ -152,18 +152,33 @@ public class PostOffice {
 
     /**
      * Make move in a game
+ * @param move AN Text of move
+     * @param uuid uuid of user
+ * @param gameID uuid of game
+ * @param layout
+     */
+    public static void sendMove(String move, String uuid, String gameID, String layout) {
+        sendMove(move, uuid, gameID, layout, null);
+    }
+
+    /**
+     * Make move in a game
      * @param move AN Text of move
      * @param uuid uuid of user
      * @param gameID uuid of game
      */
-    public static void sendMove(String move, String uuid, String gameID, String layout){
-        MailSend moveMail = new MailSend();
+    public static void sendMove(String move, String uuid, String gameID, String layout, MailCallback mcb){
+        MailSend moveMail = new MailSend(mcb);
         moveMail.execute(Chesster, "move", move, "uuid", uuid, "game", gameID, "layout", layout);
     }
 
     public static JSONObject refreshGameJSON(String gameID) {
+        return refreshGameJSON(gameID,null);
+    }
+
+    public static JSONObject refreshGameJSON(String gameID, MailCallback mcb) {
         try {
-            MailSend getGame = new MailSend();
+            MailSend getGame = new MailSend(mcb);
             String response = getGame.execute(Chives, "action", "getgame", "game", gameID)
                     .get(NETWORK_TIMEOUT_SECS, TimeUnit.SECONDS);
             return new JSONObject(response.trim());

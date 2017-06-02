@@ -97,12 +97,11 @@ public class ResumeGameActivity extends AppCompatActivity {
             }
         }
 
-        refreshList();
     }
     @Override
     public void onResume(){
         super.onResume();
-       // refreshList();
+       refreshList();
     }
 
     // updates existing gameList with data from network

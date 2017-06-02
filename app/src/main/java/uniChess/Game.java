@@ -28,7 +28,7 @@ public class Game implements Serializable{
 	private boolean whiteMove = true;
 
 	/** Game Identifier */
-	public static String ID;
+	public String ID;
 
 	private String gameString = "";
 

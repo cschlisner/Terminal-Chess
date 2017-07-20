@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.SystemClock;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MotionEvent;
@@ -23,6 +25,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ThreadFactory;
 
@@ -33,7 +37,9 @@ public class GameActivity extends AppCompatActivity {
     Game chessGame;
     private JSONObject gameJSON;
 
-    private BroadcastReceiver broadcastReceiver;
+    Runnable gameUpdateTask;
+    Handler updateHandler;
+
     String uuid;
 
     boolean userIsWhite, waitingForOpponent;
@@ -98,13 +104,11 @@ public class GameActivity extends AppCompatActivity {
             }
         });
 
-        broadcastReceiver = new BroadcastReceiver() {
+        gameUpdateTask = new Runnable() {
             @Override
-            public void onReceive(Context context, Intent intent) {
-                String updatedGameJSON = intent.getStringExtra(GameUpdateService.GAME_UPDATE);
-
+            public void run() {
                 try {
-                    gameJSON = new JSONObject(updatedGameJSON);
+                    gameJSON = PostOffice.refreshGameJSON(gameJSON.getString("id"));
                     waitingForOpponent =  gameJSON.getBoolean("w") ^ userIsWhite;
                     statusBarOpponent.setText(waitingForOpponent ? "Waiting for input..." : "");
                     statusBarUser.setText(waitingForOpponent ? "" : "Waiting for input...");
@@ -123,12 +127,15 @@ public class GameActivity extends AppCompatActivity {
                             boardView.updateValidMoves();
                         }
                     }.execute(gameJSON);
+                    if (waitingForOpponent)
+                        updateHandler.postDelayed(this, 1000);
                 } catch (Exception e){
                     e.printStackTrace();
                 }
             }
         };
 
+        updateHandler = new Handler();
     }
 
     @Override
@@ -141,6 +148,7 @@ public class GameActivity extends AppCompatActivity {
     public void onPause(){
         super.onPause();
         waitingForOpponent = false;
+        updateHandler.removeCallbacks(gameUpdateTask);
     }
 
     @Override
@@ -175,6 +183,11 @@ public class GameActivity extends AppCompatActivity {
                                 deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
                                 deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
                                 boardView.updateValidMoves();
+
+                                if (waitingForOpponent){
+                                    System.out.println("Scheduled updater in Resume");
+                                    updateHandler.postDelayed(gameUpdateTask, 1000);
+                                }
                             }
                         }.execute(gameJSON);
                     } catch (Exception e){
@@ -225,11 +238,11 @@ public class GameActivity extends AppCompatActivity {
                                 @Override
                                 public void after(String s) {
                                     waitingForOpponent = true;
-                                    // start gameUpdateService
+//                                    System.out.println("Scheduled update task in advance()");
+                                    updateHandler.postDelayed(gameUpdateTask, 1000);
                                 }
                             });
                         }
-                        else waitingForOpponent = false;
                         break;
                 }
                 break;

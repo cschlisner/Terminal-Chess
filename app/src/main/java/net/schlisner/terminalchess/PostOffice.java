@@ -144,7 +144,7 @@ public class PostOffice {
             g = new Game(new Player<>(whiteID, Game.Color.WHITE), new Player<>(blackID, Game.Color.BLACK), gameStr);
         else g = new Game(new Player<>(whiteID, Game.Color.WHITE), new Player<>(blackID, Game.Color.BLACK));
 
-        System.out.println("instantiate game : "+(System.currentTimeMillis() - t1));
+//        System.out.println("instantiate game : "+(System.currentTimeMillis() - t1));
 
         g.ID = jsonGame.optString("id");
         return g;

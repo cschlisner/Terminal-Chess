@@ -206,6 +206,9 @@ public class GameActivity extends AppCompatActivity {
                     playerOne = userIsWhite ? new Player<>("WHITE", Game.Color.WHITE)
                             : new Chesster<>("WHITE", Game.Color.WHITE);
                     chessGame = new Game(playerOne, playerTwo);
+
+                    boardView.updateValidMoves();
+
                     break;
             }
             if (!userIsWhite)
@@ -216,6 +219,8 @@ public class GameActivity extends AppCompatActivity {
     private void gameAdvance(String in){
         Game.GameEvent gameResponse = chessGame.advance(in);
         boardView.setBoard(chessGame.getCurrentBoard());
+        deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
+        deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
         switch(gameResponse){
             case CHECK:
                 Toast.makeText(getApplicationContext(), "You are in check!", Toast.LENGTH_SHORT).show();
@@ -232,8 +237,7 @@ public class GameActivity extends AppCompatActivity {
                         break;
 
                     case "network":
-                        deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
-                        deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
+
                         // send move through post office if the user entered a move
                         if (!waitingForOpponent) {
                             PostOffice.sendMove(in, uuid, chessGame.ID, boardView.getLayout(), new PostOffice.MailCallback() {
@@ -246,6 +250,14 @@ public class GameActivity extends AppCompatActivity {
                                     updateHandler.postDelayed(gameUpdateTask, 1000);
                                 }
                             });
+                        }
+                        break;
+
+                    case "ai":
+                        // user just made move
+                        if (userIsWhite ^ chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE)){
+                            // get response move from ai
+                            gameAdvance(((Chesster)chessGame.getCurrentPlayer()).getMove().getANString());
                         }
                         break;
                 }

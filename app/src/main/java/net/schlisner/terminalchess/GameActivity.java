@@ -42,7 +42,7 @@ public class GameActivity extends AppCompatActivity {
 
     String uuid;
 
-    boolean userIsWhite, waitingForOpponent;
+    boolean userIsWhite=true, waitingForOpponent;
     String opponentType = "";
 
     String gameJSONString;
@@ -79,7 +79,6 @@ public class GameActivity extends AppCompatActivity {
             gameJSON = new JSONObject(gameJSONString);
             boardView.setLayout(gameJSON);
         } catch (Exception e){}
-        userIsWhite = (new Random(System.currentTimeMillis())).nextBoolean();
 
         boardView.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -94,6 +93,7 @@ public class GameActivity extends AppCompatActivity {
                         case MotionEvent.ACTION_UP:
                             Move selection = bV.selectTile((int)x, (int)y, userIsWhite ? chessGame.getPlayer(Game.Color.WHITE) : chessGame.getPlayer(Game.Color.BLACK));
                             if (selection != null){
+                                System.out.println("Advancing: "+selection);
                                 gameAdvance(selection.getANString());
                             }
                             break;
@@ -109,6 +109,8 @@ public class GameActivity extends AppCompatActivity {
             public void run() {
                 try {
                     gameJSON = PostOffice.refreshGameJSON(gameJSON.getString("id"));
+                    if (gameJSON == null)
+                        return;
                     waitingForOpponent =  gameJSON.getBoolean("w") ^ userIsWhite;
                     statusBarOpponent.setText(waitingForOpponent ? "Waiting for input..." : "");
                     statusBarUser.setText(waitingForOpponent ? "" : "Waiting for input...");
@@ -162,6 +164,8 @@ public class GameActivity extends AppCompatActivity {
                     playerOne = new Player<>("WHITE", Game.Color.WHITE);
                     playerTwo = new Player<>("BLACK", Game.Color.BLACK);
                     chessGame = new Game(playerOne, playerTwo);
+                    waitingForOpponent = false;
+                    boardView.updateValidMoves();
                     break;
                 case "network":
                     try {
@@ -185,7 +189,6 @@ public class GameActivity extends AppCompatActivity {
                                 boardView.updateValidMoves();
 
                                 if (waitingForOpponent){
-                                    System.out.println("Scheduled updater in Resume");
                                     updateHandler.postDelayed(gameUpdateTask, 1000);
                                 }
                             }
@@ -195,6 +198,8 @@ public class GameActivity extends AppCompatActivity {
                     }
                     break;
                 case "ai":
+                    userIsWhite = (new Random(System.currentTimeMillis())).nextBoolean();
+
                     Toast.makeText(getApplicationContext(), String.format("You will be playing as %s", userIsWhite ? "white" : "black"), Toast.LENGTH_SHORT).show();
                     playerTwo = userIsWhite ? new Chesster<>("BLACK", Game.Color.BLACK)
                             : new Player<>("BLACK", Game.Color.BLACK);
@@ -211,9 +216,6 @@ public class GameActivity extends AppCompatActivity {
     private void gameAdvance(String in){
         Game.GameEvent gameResponse = chessGame.advance(in);
         boardView.setBoard(chessGame.getCurrentBoard());
-        deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
-        deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
-
         switch(gameResponse){
             case CHECK:
                 Toast.makeText(getApplicationContext(), "You are in check!", Toast.LENGTH_SHORT).show();
@@ -223,22 +225,24 @@ public class GameActivity extends AppCompatActivity {
                 switch (opponentType){
 
                     case "local":
+                        deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(!userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
+                        deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(!userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
                         boardView.flipBoard();
+                        userIsWhite = !userIsWhite;
                         break;
 
                     case "network":
+                        deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
+                        deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
                         // send move through post office if the user entered a move
                         if (!waitingForOpponent) {
                             PostOffice.sendMove(in, uuid, chessGame.ID, boardView.getLayout(), new PostOffice.MailCallback() {
                                 @Override
                                 public void before() {
-
                                 }
-
                                 @Override
                                 public void after(String s) {
                                     waitingForOpponent = true;
-//                                    System.out.println("Scheduled update task in advance()");
                                     updateHandler.postDelayed(gameUpdateTask, 1000);
                                 }
                             });

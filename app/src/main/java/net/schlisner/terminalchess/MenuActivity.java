@@ -100,15 +100,8 @@ public class MenuActivity extends AppCompatActivity {
 
     // join game lobby to get matched, start checking for a new game in gamelist and enter it
     public void startNewNetworkGame(View view){
-//        try {
-//            String gameId = po.joinNewGame(uuid);
-//            Intent intent = new Intent(this, GameActivity.class).putExtra("init_mode", "new")
-//                                                                .putExtra("opponent", "network")
-//                                                                .putExtra("gameID", gameId);
-//            startActivity(intent);
-//        } catch (Exception e){
-//            Toast.makeText(getApplicationContext(), "Network took too long", Toast.LENGTH_SHORT).show();
-//        }
+        Intent i = new Intent(this, NetworkLobbyActivity.class).putExtra("uuid", uuid);
+        startActivity(i);
     }
 
     public void startNewLocalGame(View view){

@@ -49,7 +49,10 @@ public class TileDisplay {
         piecePaint.setAntiAlias(true);
 
         tileColor = ContextCompat.getColor(context, R.color.chessBoardLight);
-        piecePaint.setTypeface(Typeface.defaultFromStyle(0));
+
+
+        Typeface tf = Typeface.createFromAsset(context.getAssets(), "fonts/robotolight.ttf");
+        piecePaint.setTypeface(tf);
 
         fillColor = (tile.color.equals(Game.Color.BLACK)) ? ContextCompat.getColor(context, R.color.chessBoardDark): ContextCompat.getColor(context, R.color.chessBoardLight);
 

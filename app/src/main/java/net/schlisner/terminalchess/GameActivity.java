@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.SystemClock;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -39,6 +40,7 @@ public class GameActivity extends AppCompatActivity {
 
     Runnable gameUpdateTask;
     Handler updateHandler;
+    HandlerThread mHandlerThread = new HandlerThread("HandlerThread");
 
     String uuid;
 
@@ -77,6 +79,7 @@ public class GameActivity extends AppCompatActivity {
         gameJSONString = menuIntent.getStringExtra("gameJSON");
         try {
             gameJSON = new JSONObject(gameJSONString);
+            System.out.println("Starting Game: "+gameJSON.getString("id"));
             boardView.setLayout(gameJSON);
         } catch (Exception e){}
 
@@ -112,8 +115,13 @@ public class GameActivity extends AppCompatActivity {
                     if (gameJSON == null)
                         return;
                     waitingForOpponent =  gameJSON.getBoolean("w") ^ userIsWhite;
-                    statusBarOpponent.setText(waitingForOpponent ? "Waiting for input..." : "");
-                    statusBarUser.setText(waitingForOpponent ? "" : "Waiting for input...");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            statusBarOpponent.setText(waitingForOpponent ? "Waiting for input..." : "");
+                            statusBarUser.setText(waitingForOpponent ? "" : "Waiting for input...");
+                        }
+                    });
                     new AsyncTask<JSONObject, Void, Void>() {
                         @Override
                         protected Void doInBackground(JSONObject[] params) {
@@ -137,7 +145,8 @@ public class GameActivity extends AppCompatActivity {
             }
         };
 
-        updateHandler = new Handler();
+        mHandlerThread.start();
+        updateHandler = new Handler(mHandlerThread.getLooper());
     }
 
     @Override

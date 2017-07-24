@@ -48,7 +48,6 @@ action = form["action"].value
 if action == 'register':
 	player = register();
 	print(player);
-	checkin(player);
 
 elif action == 'checkin':
 	player = form["uuid"].value

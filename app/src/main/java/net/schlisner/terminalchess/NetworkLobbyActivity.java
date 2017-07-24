@@ -1,9 +1,12 @@
 package net.schlisner.terminalchess;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.AsyncTask;
 import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.SystemClock;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -11,12 +14,20 @@ import android.view.WindowManager;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import static net.schlisner.terminalchess.PostOffice.listGames;
+import static net.schlisner.terminalchess.PostOffice.listGamesJSON;
+
 public class NetworkLobbyActivity extends AppCompatActivity {
 
     Runnable gameUpdateTask;
-    Handler updateHandler = new Handler();
+    Handler updateHandler = null;
+    HandlerThread mHandlerThread = null;
 
     String uuid;
+    int gameCount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,8 +45,13 @@ public class NetworkLobbyActivity extends AppCompatActivity {
 
         final TextView onlinePlayers = (TextView) findViewById(R.id.usersInLobbyText);
 
+        try {
+            gameCount = PostOffice.listGamesJSON(uuid).length();
+            System.out.println("gamecount = "+gameCount);
+        } catch (Exception e){
+            // couldn't list games
+        }
         PostOffice.checkIn(uuid);
-
         gameUpdateTask = new Runnable() {
             @Override
             public void run() {
@@ -43,20 +59,41 @@ public class NetworkLobbyActivity extends AppCompatActivity {
                         // update text
 //                    int n = PostOffice.getOnlinePlayers();
 //                    onlinePlayers.setText("Online Players: "+n);
+                    JSONArray gl = PostOffice.listGamesJSON(uuid);
 
-                        // check to see if we are in a new game
-//                    String gameId = PostOffice.inNewGame(uuid);
+                    JSONObject gameJSON = (gl.length() > gameCount) ? gl.getJSONObject(0) : null;
+                    System.out.println("gamecount = "+gl.length());
 
-                        // if we aren't wait a second and check again
-//                    if (gameId == null)
-//                        updateHandler.postDelayed(this, 1000);
+                    // if we aren't wait a second and check again
+                    if (gameJSON == null)
+                        updateHandler.postDelayed(this, 1000);
                         // if we are start up the game and enter it
+                    else {
+                        Intent i = new Intent(getApplicationContext(), GameActivity.class)
+                                .putExtra("opponent", "network")
+                                .putExtra("uuid", uuid)
+                                .putExtra("gameJSON", gameJSON.toString());
+                        startActivity(i);
+                    }
+
                 } catch (Exception e){
                     e.printStackTrace();
                 }
             }
         };
+        mHandlerThread = new HandlerThread("HandlerThread");
+        mHandlerThread.start();
+        updateHandler = new Handler(mHandlerThread.getLooper());
 
         updateHandler.postDelayed(gameUpdateTask, 1000);
+
+    }
+
+    @Override
+    public void onPause(){
+        super.onPause();
+
+        updateHandler.removeCallbacks(gameUpdateTask);
+
     }
 }

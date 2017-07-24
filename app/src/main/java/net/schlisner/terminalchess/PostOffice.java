@@ -55,7 +55,7 @@ public class PostOffice {
      */
     public static void checkIn(String uuid) {
         MailSend checkIn = new MailSend();
-        checkIn.execute(Chives, "action", "checkin");
+        checkIn.execute(Chives, "action", "checkin", "uuid", uuid);
     }
 
     /**

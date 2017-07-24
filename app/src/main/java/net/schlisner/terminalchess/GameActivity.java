@@ -237,7 +237,9 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void gameAdvance(String in){
+        boardView.invalidate();
         Game.GameEvent gameResponse = chessGame.advance(in);
+        System.out.println("Game response: "+gameResponse);
         boardView.setBoard(chessGame.getCurrentBoard());
         deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
         deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));

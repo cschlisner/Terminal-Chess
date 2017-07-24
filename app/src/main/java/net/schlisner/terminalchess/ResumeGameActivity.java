@@ -3,7 +3,12 @@ package net.schlisner.terminalchess;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.ColorFilter;
+import android.graphics.PorterDuff;
 import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -37,10 +42,13 @@ public class ResumeGameActivity extends AppCompatActivity {
     private String uuid;
     ListView gameList;
     SwipeRefreshLayout srl;
-    TextView netErr;
+    ProgressBar pb;
+    TextView loadingMsg;
     SharedPreferences sharedPref;
     JSONArray savedGameArray = new JSONArray();
     List<JSONObject> savedGameJSONList;
+    HandlerThread ht;
+    Handler updateHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +75,11 @@ public class ResumeGameActivity extends AppCompatActivity {
             }
         });
 
-        netErr = (TextView)findViewById(R.id.networkErrorTextView);
+        pb = (ProgressBar)findViewById(R.id.meme);
+        pb.getIndeterminateDrawable().setColorFilter(Color.parseColor("#00740c"), PorterDuff.Mode.MULTIPLY);
+
+
+        loadingMsg = (TextView)findViewById(R.id.loadingText);
 //        gameList.setEmptyView(pb);
 
         srl = (SwipeRefreshLayout)findViewById(R.id.swiperefresh);
@@ -79,29 +91,52 @@ public class ResumeGameActivity extends AppCompatActivity {
         });
 
         sharedPref = this.getPreferences(Context.MODE_PRIVATE);
-        String savedGameList = sharedPref.getString("savedGames", null);
 
-        // if we have saved games, populate the list with the saved games before updating from network
-        if (savedGameList  != null){
-            System.out.println("Loading saved game data...");
-            // games stored in json array
-            try {
-                savedGameArray = new JSONArray(savedGameList);
-                savedGameJSONList = new ArrayList<>();
-                for (int i = 0; i < savedGameArray.length(); ++i)
-                    savedGameJSONList.add(savedGameArray.getJSONObject(i));
-                ChessGameListAdapter cgla = new ChessGameListAdapter(getApplicationContext(), savedGameJSONList, uuid);
-                gameList.setAdapter(cgla);
-            } catch (Exception e){
-                e.printStackTrace();
-            }
-        }
-
+        ht = new HandlerThread("networkupdate");
+        ht.start();
+        updateHandler = new Handler(ht.getLooper());
     }
     @Override
     public void onResume(){
         super.onResume();
-        refreshList();
+        final String savedGameList = sharedPref.getString("savedGames", null);
+
+
+        // if we have saved games, populate the list with the saved games before updating from network
+
+        updateHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+//                if (savedGameList  != null){
+//                    System.out.println("Loading saved game data..."+savedGameList);
+//                    // games stored in json array
+//                    try {
+//                        savedGameArray = new JSONArray(savedGameList);
+//                        savedGameJSONList = new ArrayList<>();
+//                        for (int i = 0; i < savedGameArray.length(); ++i)
+//                            savedGameJSONList.add(savedGameArray.getJSONObject(i));
+//                        final ChessGameListAdapter cgla = new ChessGameListAdapter(getApplicationContext(), savedGameJSONList, uuid);
+//                        runOnUiThread(new Runnable() {
+//                            @Override
+//                            public void run() {
+//                                gameList.setAdapter(cgla);
+//                            }
+//                        });
+//                    } catch (Exception e){
+//                        e.printStackTrace();
+//                    }
+//                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        pb.setVisibility(View.GONE);
+                        loadingMsg.setVisibility(View.GONE);
+                    }
+                });
+                refreshList();
+            }
+        }, 1000);
+
     }
 
     // updates existing gameList with data from network
@@ -114,17 +149,22 @@ public class ResumeGameActivity extends AppCompatActivity {
                 @Override
                 public void before() {
                     System.out.println("meme doot danks");
-                    swipeRefreshLayout.setRefreshing(true);
+
                 }
 
                 @Override
                 public void after(String response) {
-                    swipeRefreshLayout.setRefreshing(false);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            swipeRefreshLayout.setRefreshing(false);
+                        }
+                    });
                     try {
                         JSONArray gamesJSON = new JSONArray(response);
                         SharedPreferences.Editor e = sharedPref.edit();
                         e.putString("savedGames", gamesJSON.toString());
-                        e.commit();
+                        e.apply();
                         List<JSONObject> gamesJSONList = new ArrayList<>();
                         for (int i = 0; i < gamesJSON.length(); ++i)
                             gamesJSONList.add(gamesJSON.getJSONObject(i));

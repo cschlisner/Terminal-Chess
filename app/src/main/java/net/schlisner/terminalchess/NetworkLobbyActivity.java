@@ -96,5 +96,6 @@ public class NetworkLobbyActivity extends AppCompatActivity {
 
         updateHandler.removeCallbacks(gameUpdateTask);
 
+        PostOffice.checkOut(uuid);
     }
 }

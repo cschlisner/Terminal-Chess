@@ -57,6 +57,16 @@ public class PostOffice {
         MailSend checkIn = new MailSend();
         checkIn.execute(Chives, "action", "checkin", "uuid", uuid);
     }
+    /**
+     * Checks player out of lobby
+     *
+     * @return List of all games user is engaged in, by time created
+     */
+    public static void checkOut(String uuid) {
+        MailSend checkIn = new MailSend();
+        checkIn.execute(Chives, "action", "checkout", "uuid", uuid);
+    }
+
 
     /**
      * Checks player into lobby, looks for new game including player, returns game id

@@ -46,17 +46,18 @@ public class MenuActivity extends AppCompatActivity {
         uuidView = (TextView) findViewById(R.id.uuidView);
         uuidView.setText(uuid);
         po = new PostOffice();
-        if (uuid == ""){
+        if (uuid.equals("")){
             System.out.println("Registering user...");
             try {
-                uuid = po.register();
+                uuid = PostOffice.register();
+                PostOffice.checkOut(uuid);
             } catch (Exception e){
                 Toast.makeText(getApplicationContext(), "Network took too long to register user", Toast.LENGTH_SHORT).show();
             }
             System.out.println("Setting user ID to: " + uuid);
             SharedPreferences.Editor editor = sharedPref.edit();
             editor.putString("uuid", uuid);
-            editor.commit();
+            editor.apply();
             uuidView.setText(uuid);
         }
         uuidView.setOnLongClickListener(new View.OnLongClickListener() {

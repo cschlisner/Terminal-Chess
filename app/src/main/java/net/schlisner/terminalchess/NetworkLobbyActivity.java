@@ -72,6 +72,7 @@ public class NetworkLobbyActivity extends AppCompatActivity {
                         Intent i = new Intent(getApplicationContext(), GameActivity.class)
                                 .putExtra("opponent", "network")
                                 .putExtra("uuid", uuid)
+                                .putExtra("startFromLobby", true)
                                 .putExtra("gameJSON", gameJSON.toString());
                         startActivity(i);
                     }

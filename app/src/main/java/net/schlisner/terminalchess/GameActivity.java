@@ -44,7 +44,7 @@ public class GameActivity extends AppCompatActivity {
 
     String uuid;
 
-    boolean userIsWhite=true, waitingForOpponent;
+    boolean userIsWhite=true, waitingForOpponent, returnToMenu;
     String opponentType = "";
 
     String gameJSONString;
@@ -73,6 +73,8 @@ public class GameActivity extends AppCompatActivity {
         statusBarUser = (TextView) findViewById(R.id.statusBarUser);
 
         Intent menuIntent = getIntent();
+        if (menuIntent.getBooleanExtra("startFromLobby", false))
+            returnToMenu = true;
 
         opponentType = menuIntent.getStringExtra("opponent");
         uuid = menuIntent.getStringExtra("uuid");
@@ -160,6 +162,15 @@ public class GameActivity extends AppCompatActivity {
         super.onPause();
         waitingForOpponent = false;
         updateHandler.removeCallbacks(gameUpdateTask);
+    }
+
+    @Override
+    public void onBackPressed(){
+        if (returnToMenu) {
+            Intent i = new Intent(getApplicationContext(), MenuActivity.class);
+            startActivity(i);
+        }
+        else super.onBackPressed();
     }
 
     @Override

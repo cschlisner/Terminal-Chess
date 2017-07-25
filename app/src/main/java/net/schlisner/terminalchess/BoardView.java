@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
+import android.support.v4.content.ContextCompat;
 import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -72,12 +73,16 @@ public class BoardView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        tileDim = ((float)getWidth() / 8.0f);
+        Paint borderPaint = new Paint();
+        borderPaint.setColor(ContextCompat.getColor(getContext(), R.color.chessBoardBorder));
+        canvas.drawRect(0,0, canvas.getWidth(), 2f, borderPaint);
+        tileDim = (((float)getWidth()-4) / 8.0f);
         for (int i = 0; i < 8; ++i){
             for (int j = 0; j < 8; ++j) {
-                tileDisplays[flipped ? 7-i : i ][ flipped ? 7-j : j].draw(canvas, tileDim, (i*tileDim), (j*tileDim));
+                tileDisplays[flipped ? 7-i : i ][ flipped ? 7-j : j].draw(canvas, tileDim, (i*tileDim), 10+(j*tileDim));
             }
         }
+        canvas.drawRect(0, canvas.getHeight()-2f, canvas.getWidth(), canvas.getHeight(), borderPaint);
     }
 
     @Override

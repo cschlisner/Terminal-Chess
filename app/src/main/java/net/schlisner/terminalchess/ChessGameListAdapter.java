@@ -58,7 +58,7 @@ class ChessGameListAdapter extends ArrayAdapter<JSONObject> {
                     if (!isw) {
                         icon.flipBoard();
                     }
-                    userturn.setText((game.getBoolean("w") ^ isw) ? "" : "!!");
+                    userturn.setText((game.getBoolean("w") ^ isw) ? "" : getContext().getString(R.string.waiting_for_player));
                 } catch (Exception e){}
                 icon.setLayout(game);
                 icon.setMonochrome(true);

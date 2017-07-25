@@ -1,32 +1,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="fill_parent"
-    android:layout_height="?android:attr/listPreferredItemHeight"
-    android:padding="6dip" >
-
-    <net.schlisner.terminalchess.BoardView
-        android:id="@+id/icon"
-        android:layout_width="50dp"
-        android:layout_height="match_parent"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentTop="true"
-        android:contentDescription="TODO" />
-
-    <TextView
-        android:id="@+id/gameIDTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="fill_parent"
-        android:layout_alignParentTop="true"
-        android:layout_alignWithParentIfMissing="true"
-        android:layout_toRightOf="@+id/icon"
-        android:fontFamily="serif-monospace"
-        android:gravity="center_vertical"
-        android:paddingLeft="10dp"
-        android:text="Example application"
-        android:textColor="@color/chessBoardHighlight"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        android:typeface="monospace" />
+    android:layout_height="?android:attr/listPreferredItemHeightLarge"
+    >
 
     <TextView
         android:id="@+id/userTurn"
@@ -34,8 +10,37 @@
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
         android:paddingLeft="20dp"
-        android:layout_toRightOf="@+id/gameIDTextView"
         android:textColor="@color/chessBoardHighlight"
         android:textSize="30sp" />
+
+    <TextView
+        android:id="@+id/gameIDTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent"
+        android:layout_alignWithParentIfMissing="true"
+        android:fontFamily="serif-monospace"
+        android:gravity="center_vertical"
+        android:paddingLeft="10dp"
+        android:text="Example application"
+        android:textColor="@color/chessBoardHighlight"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:typeface="monospace"
+        android:layout_marginRight="84dp"
+        android:layout_marginEnd="84dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+    <net.schlisner.terminalchess.BoardView
+        android:id="@+id/icon"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginLeft="30dp"
+        android:layout_toEndOf="@id/userTurn"
+        android:layout_toLeftOf="@id/gameIDTextView"
+        android:layout_toRightOf="@id/userTurn"
+        android:contentDescription="TODO" />
+
 
 </RelativeLayout>

@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Terminal Chess</string>
     <string name="title_activity_main">MainActivity</string>
+    <string name="waiting_for_player">►</string>
 </resources>

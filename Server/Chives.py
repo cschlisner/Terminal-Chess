@@ -25,7 +25,7 @@ def find_games(player_uuid):
 
 def register():
 	return r.db("chess").table("users").insert({
-	  "online" : True
+	  "online" : False
 	}).run(conn)["generated_keys"][0]
 
 
@@ -46,8 +46,8 @@ form = cgi.FieldStorage()
 action = form["action"].value
 
 if action == 'register':
-	player = register();
-	print(player);
+	player = register()
+	print(player)
 
 elif action == 'checkin':
 	player = form["uuid"].value

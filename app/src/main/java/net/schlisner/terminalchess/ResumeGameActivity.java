@@ -9,6 +9,7 @@ import android.graphics.PorterDuff;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.SystemClock;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -44,11 +45,13 @@ public class ResumeGameActivity extends AppCompatActivity {
     SwipeRefreshLayout srl;
     ProgressBar pb;
     TextView loadingMsg;
+    TextView noGamesMsg;
     SharedPreferences sharedPref;
     JSONArray savedGameArray = new JSONArray();
-    List<JSONObject> savedGameJSONList;
+    List<JSONObject> gamesJSONList;
     HandlerThread ht;
     Handler updateHandler;
+    ChessGameListAdapter cgla;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,11 +78,16 @@ public class ResumeGameActivity extends AppCompatActivity {
             }
         });
 
+        gamesJSONList = new ArrayList<>();
+        cgla = new ChessGameListAdapter(getApplicationContext(), gamesJSONList, uuid);
+        gameList.setAdapter(cgla);
+
         pb = (ProgressBar)findViewById(R.id.meme);
         pb.getIndeterminateDrawable().setColorFilter(Color.parseColor("#00740c"), PorterDuff.Mode.MULTIPLY);
 
 
         loadingMsg = (TextView)findViewById(R.id.loadingText);
+        noGamesMsg = (TextView)findViewById(R.id.noGames);
 //        gameList.setEmptyView(pb);
 
         srl = (SwipeRefreshLayout)findViewById(R.id.swiperefresh);
@@ -104,7 +112,7 @@ public class ResumeGameActivity extends AppCompatActivity {
 
         // if we have saved games, populate the list with the saved games before updating from network
 
-        updateHandler.postDelayed(new Runnable() {
+        updateHandler.post(new Runnable() {
             @Override
             public void run() {
 //                if (savedGameList  != null){
@@ -135,7 +143,7 @@ public class ResumeGameActivity extends AppCompatActivity {
                 });
                 refreshList();
             }
-        }, 1000);
+        });
 
     }
 
@@ -148,7 +156,6 @@ public class ResumeGameActivity extends AppCompatActivity {
             PostOffice.listGamesJSON(uuid, new PostOffice.MailCallback() {
                 @Override
                 public void before() {
-                    System.out.println("meme doot danks");
 
                 }
 
@@ -161,16 +168,22 @@ public class ResumeGameActivity extends AppCompatActivity {
                         }
                     });
                     try {
+//                        SharedPreferences.Editor e = sharedPref.edit();
+//                        e.putString("savedGames", gamesJSON.toString());
+//                        e.apply();
+                        long t1 = System.currentTimeMillis();
                         JSONArray gamesJSON = new JSONArray(response);
-                        SharedPreferences.Editor e = sharedPref.edit();
-                        e.putString("savedGames", gamesJSON.toString());
-                        e.apply();
-                        List<JSONObject> gamesJSONList = new ArrayList<>();
+                        System.out.println(response);
+
+                        cgla.clear();
                         for (int i = 0; i < gamesJSON.length(); ++i)
-                            gamesJSONList.add(gamesJSON.getJSONObject(i));
-                        ChessGameListAdapter cgla = new ChessGameListAdapter(appContext, gamesJSONList, uuid);
-                        gameList.setAdapter(cgla);
-                        System.out.println("Updated games from network");
+                            cgla.add(gamesJSON.getJSONObject(i));
+                        cgla.notifyDataSetChanged();
+
+                        if (gamesJSON.length() == 0)
+                            noGamesMsg.setVisibility(View.VISIBLE);
+                        else noGamesMsg.setVisibility(View.GONE);
+                        System.out.println("Updated games from network: "+(System.currentTimeMillis()-t1));
                     } catch (Exception e){
                         e.printStackTrace();
                     }

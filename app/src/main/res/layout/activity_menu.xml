@@ -10,15 +10,6 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context=".MenuActivity">
 
-    <Button
-        android:id="@+id/newGameButton"
-        style="@style/Schlisner.Terminal.Text.Headerext"
-        android:layout_marginTop="150dp"
-        android:onClick="resumeGame"
-        android:text="Resume Game"
-        android:layout_below="@+id/uuidView"
-        android:layout_alignLeft="@+id/button"
-        android:layout_alignStart="@+id/button" />
 
     <Button
         android:id="@+id/button3"
@@ -36,6 +27,18 @@
         android:textStyle="italic"
         android:typeface="monospace" />
 
+    <Button
+        android:id="@+id/newGameButton"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:elevation="0dp"
+        android:onClick="resumeGame"
+        android:text="Resume Game"
+        android:textColor="@color/chessBoardHighlight"
+        android:layout_above="@+id/button2"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="75dp" />
     <Button
         android:id="@+id/button2"
         style="@style/Widget.AppCompat.Button.Borderless"

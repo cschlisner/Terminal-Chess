@@ -29,6 +29,7 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.ThreadFactory;
 
 import uniChess.*;
@@ -44,7 +45,7 @@ public class GameActivity extends AppCompatActivity {
 
     String uuid;
 
-    boolean userIsWhite=true, waitingForOpponent, returnToMenu;
+    boolean userIsWhite=true, waitingForOpponent, returnToMenu, netMove;
     String opponentType = "";
 
     String gameJSONString;
@@ -79,6 +80,7 @@ public class GameActivity extends AppCompatActivity {
         opponentType = menuIntent.getStringExtra("opponent");
         uuid = menuIntent.getStringExtra("uuid");
         gameJSONString = menuIntent.getStringExtra("gameJSON");
+
         try {
             gameJSON = new JSONObject(gameJSONString);
             System.out.println("Starting Game: "+gameJSON.getString("id"));
@@ -99,7 +101,7 @@ public class GameActivity extends AppCompatActivity {
                             Move selection = bV.selectTile((int)x, (int)y, userIsWhite ? chessGame.getPlayer(Game.Color.WHITE) : chessGame.getPlayer(Game.Color.BLACK));
                             if (selection != null){
                                 System.out.println("Advancing: "+selection);
-                                gameAdvance(selection.getANString());
+                                gameAdvance(selection.getANString(), false);
                             }
                             break;
                     }
@@ -116,31 +118,29 @@ public class GameActivity extends AppCompatActivity {
                     gameJSON = PostOffice.refreshGameJSON(gameJSON.getString("id"));
                     if (gameJSON == null)
                         return;
+                    System.out.println(gameJSON.getJSONArray("moves"));
                     waitingForOpponent =  gameJSON.getBoolean("w") ^ userIsWhite;
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            statusBarOpponent.setText(waitingForOpponent ? "Waiting for input..." : "");
-                            statusBarUser.setText(waitingForOpponent ? "" : "Waiting for input...");
+                            statusBarOpponent.setText(waitingForOpponent ? getString(R.string.waiting_for_player) : "");
+                            statusBarUser.setText(waitingForOpponent ? "" : getString(R.string.waiting_for_player));
                         }
                     });
-                    new AsyncTask<JSONObject, Void, Void>() {
-                        @Override
-                        protected Void doInBackground(JSONObject[] params) {
-                            chessGame = PostOffice.JSONToGame(params[0]);
-                            return null;
-                        }
 
-                        @Override
-                        protected void onPostExecute(Void res) {
-                            boardView.setBoard(chessGame.getCurrentBoard());
-                            deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
-                            deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
-                            boardView.updateValidMoves();
-                        }
-                    }.execute(gameJSON);
                     if (waitingForOpponent)
                         updateHandler.postDelayed(this, 1000);
+                    else {
+                        System.out.println("Running last input");
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    gameAdvance(gameJSON.getJSONArray("moves").getString(gameJSON.getJSONArray("moves").length() - 1), true);
+                                } catch (Exception e){}
+                            }
+                        });
+                    }
                 } catch (Exception e){
                     e.printStackTrace();
                 }
@@ -191,8 +191,10 @@ public class GameActivity extends AppCompatActivity {
                     try {
                         userIsWhite = PostOffice.isWhite(gameJSON.getString("white_md5uuid"), uuid);
                         waitingForOpponent =  gameJSON.getBoolean("w") ^ userIsWhite;
-                        statusBarOpponent.setText(waitingForOpponent ? "Waiting for input..." : "");
-                        statusBarUser.setText(waitingForOpponent ? "" : "Waiting for input...");
+                        System.out.println("UserIsWhite: "+userIsWhite+" waitingForOpponent: "+waitingForOpponent);
+
+                        statusBarOpponent.setText(waitingForOpponent ? getString(R.string.waiting_for_player) : "");
+                        statusBarUser.setText(waitingForOpponent ? "" : getString(R.string.waiting_for_player));
 
                         new AsyncTask<JSONObject, Void, Void>() {
                             @Override
@@ -236,7 +238,8 @@ public class GameActivity extends AppCompatActivity {
         }
     }
 
-    private void gameAdvance(String in){
+    private void gameAdvance(String in, boolean netMove){
+        System.out.println("Input: "+in);
         boardView.invalidate();
         Game.GameEvent gameResponse = chessGame.advance(in);
         System.out.println("Game response: "+gameResponse);
@@ -245,7 +248,7 @@ public class GameActivity extends AppCompatActivity {
         deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
         switch(gameResponse){
             case CHECK:
-                Toast.makeText(getApplicationContext(), "You are in check!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "Check!", Toast.LENGTH_SHORT).show();
             case OK:
                 boardView.updateValidMoves();
 
@@ -259,43 +262,80 @@ public class GameActivity extends AppCompatActivity {
                         break;
 
                     case "network":
-
-                        // send move through post office if the user entered a move
-                        if (!waitingForOpponent) {
-                            PostOffice.sendMove(in, uuid, chessGame.ID, boardView.getLayout(), new PostOffice.MailCallback() {
-                                @Override
-                                public void before() {
-                                }
-                                @Override
-                                public void after(String s) {
-                                    waitingForOpponent = true;
-                                    updateHandler.postDelayed(gameUpdateTask, 1000);
-                                }
-                            });
-                        }
+                        if (!netMove)
+                            sendMove(in);
                         break;
 
                     case "ai":
                         // user just made move
                         if (userIsWhite ^ chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE)){
                             // get response move from ai
-                            gameAdvance(((Chesster)chessGame.getCurrentPlayer()).getMove().getANString());
+                            gameAdvance(((Chesster)chessGame.getCurrentPlayer()).getMove().getANString(), false);
                         }
                         break;
                 }
                 break;
+
             case CHECKMATE:
-                Toast.makeText(getApplicationContext(), "Checkmate! You lose!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "Checkmate!", Toast.LENGTH_SHORT).show();
+                if (!netMove)
+                    sendMove(in);
+                saveGameAndExit(in);
                 break;
+
             case STALEMATE:
-                Toast.makeText(getApplicationContext(), "Stalemate! GameActivity ends in draw!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "Stalemate! Game ends in draw!", Toast.LENGTH_SHORT).show();
+                if (!netMove)
+                    sendMove(in);
+                saveGameAndExit(in);
                 break;
+
             case DRAW:
                 Toast.makeText(getApplicationContext(), "Draw!", Toast.LENGTH_SHORT).show();
+                if (!netMove)
+                    sendMove(in);
+                saveGameAndExit(in);
                 break;
+
+            case INVALID:
+                System.out.println(chessGame.getCurrentBoard());
+                break;
+
             default:
-                // Save game, exit to menu
+                saveGameAndExit(in);
                 break;
         }
+    }
+
+    private void saveGameAndExit(String in){
+        // Save game
+        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        String completedGames = sharedPref.getString("completedGames", null);
+        JSONArray completedGameArray = null;
+        try {
+            completedGameArray = completedGames != null ? new JSONArray(completedGames) : new JSONArray();
+            gameJSON.getJSONArray("moves").put(in);
+            completedGameArray.put(gameJSON);
+        }catch (Exception e){e.printStackTrace();}
+        SharedPreferences.Editor e =  sharedPref.edit();
+        e.putString("completedGames", completedGameArray.toString());
+        e.apply();
+        Intent i = new Intent(getApplicationContext(), MenuActivity.class);
+        startActivity(i);
+        finish();
+    }
+
+    private void sendMove(String move){
+        System.out.println("Sending move");
+        PostOffice.sendMove(move, uuid, chessGame.ID, boardView.getLayout(), new PostOffice.MailCallback() {
+            @Override
+            public void before() {
+            }
+            @Override
+            public void after(String s) {
+                System.out.println(s);
+                updateHandler.postDelayed(gameUpdateTask, 1000);
+            }
+        });
     }
 }

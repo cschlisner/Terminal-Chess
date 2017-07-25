@@ -75,6 +75,7 @@ public class NetworkLobbyActivity extends AppCompatActivity {
                                 .putExtra("startFromLobby", true)
                                 .putExtra("gameJSON", gameJSON.toString());
                         startActivity(i);
+                        finish();
                     }
 
                 } catch (Exception e){

@@ -6,10 +6,10 @@
 
     <TextView
         android:id="@+id/userTurn"
-        android:layout_width="wrap_content"
+        android:layout_width="40dp"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
-        android:paddingLeft="20dp"
+        android:layout_marginLeft="10dp"
         android:textColor="@color/chessBoardHighlight"
         android:textSize="30sp" />
 
@@ -26,8 +26,8 @@
         android:textSize="12sp"
         android:textStyle="bold"
         android:typeface="monospace"
-        android:layout_marginRight="84dp"
-        android:layout_marginEnd="84dp"
+        android:layout_marginRight="42dp"
+        android:layout_marginEnd="42dp"
         android:layout_alignParentTop="true"
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true" />

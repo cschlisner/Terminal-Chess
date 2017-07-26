@@ -6,6 +6,7 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.support.v4.content.ContextCompat;
 import android.text.TextPaint;
@@ -38,6 +39,8 @@ public class BoardView extends View {
     int contentHeight = getHeight() - paddingTop - paddingBottom;
 
     Board gameBoard = new Board();
+    Paint borderPaint = new Paint();
+
 
     Paint paint = new Paint();
 
@@ -73,7 +76,6 @@ public class BoardView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        Paint borderPaint = new Paint();
         borderPaint.setColor(ContextCompat.getColor(getContext(), R.color.chessBoardBorder));
         canvas.drawRect(0,0, canvas.getWidth(), 2f, borderPaint);
         tileDim = (((float)getWidth()-4) / 8.0f);

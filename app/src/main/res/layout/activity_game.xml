@@ -7,7 +7,7 @@
     android:orientation="vertical"
     android:weightSum="1">
 
-    <TextView
+    <net.schlisner.terminalchess.StyledTextView
         android:id="@+id/deathRowOpponent"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -35,7 +35,7 @@
         android:background="?attr/colorControlHighlight"
         android:foregroundGravity="center" />
 
-    <TextView
+    <net.schlisner.terminalchess.StyledTextView
         android:id="@+id/deathRowUser"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -81,6 +81,14 @@
         android:textColor="@color/chessBoardHighlight"
         android:textSize="18sp"
         android:typeface="monospace" />
+
+    <ProgressBar
+        android:id="@+id/gameProgressbar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:visibility="visible"
+        android:indeterminate="true"/>
 
 
 </RelativeLayout>

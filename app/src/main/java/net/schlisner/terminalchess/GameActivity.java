@@ -1,6 +1,5 @@
 package net.schlisner.terminalchess;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -8,29 +7,19 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.SystemClock;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.UUID;
-import java.util.concurrent.Exchanger;
-import java.util.concurrent.ThreadFactory;
+import net.schlisner.terminalchess.Timer;
 
 import uniChess.*;
 
@@ -54,6 +43,9 @@ public class GameActivity extends AppCompatActivity {
     TextView statusBarOpponent;
     TextView deathRowUser;
     TextView statusBarUser;
+    ProgressBar pb;
+
+    Timer activityTimer = new Timer();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +56,9 @@ public class GameActivity extends AppCompatActivity {
         if (actionBar!=null) actionBar.hide();
 
         setContentView(R.layout.activity_game);
+
+        pb = (ProgressBar) findViewById(R.id.gameProgressbar);
+        pb.setVisibility(View.GONE);
 
         boardView = (BoardView) findViewById(R.id.boardviewer);
 
@@ -87,6 +82,42 @@ public class GameActivity extends AppCompatActivity {
             boardView.setLayout(gameJSON);
         } catch (Exception e){}
 
+
+        mHandlerThread.start();
+        updateHandler = new Handler(mHandlerThread.getLooper());
+    }
+
+    @Override
+    public void onStart(){
+        super.onStart();
+
+    }
+
+    boolean stop_updates;
+    @Override
+    public void onPause(){
+        super.onPause();
+        waitingForOpponent = false;
+        updateHandler.removeCallbacks(gameUpdateTask);
+        stop_updates = true;
+    }
+
+    @Override
+    public void onBackPressed(){
+        if (returnToMenu) {
+            Intent i = new Intent(getApplicationContext(), MenuActivity.class);
+            startActivity(i);
+            finish();
+        }
+        else {
+            super.onBackPressed();
+            finish();
+        }
+    }
+
+    @Override
+    public void onResume(){
+        super.onResume();
         boardView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent e) {
@@ -115,6 +146,7 @@ public class GameActivity extends AppCompatActivity {
             @Override
             public void run() {
                 try {
+                    if (stop_updates) return;
                     gameJSON = PostOffice.refreshGameJSON(gameJSON.getString("id"));
                     if (gameJSON == null)
                         return;
@@ -123,8 +155,8 @@ public class GameActivity extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            statusBarOpponent.setText(waitingForOpponent ? getString(R.string.waiting_for_player) : "");
-                            statusBarUser.setText(waitingForOpponent ? "" : getString(R.string.waiting_for_player));
+                            statusBarOpponent.setText(waitingForOpponent ? getString(R.string.waiting_for_player) : getString(R.string.waiting_for_opponent));
+                            statusBarUser.setText(waitingForOpponent ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
                         }
                     });
 
@@ -147,54 +179,30 @@ public class GameActivity extends AppCompatActivity {
             }
         };
 
-        mHandlerThread.start();
-        updateHandler = new Handler(mHandlerThread.getLooper());
-    }
 
-    @Override
-    public void onStart(){
-        super.onStart();
 
-    }
 
-    @Override
-    public void onPause(){
-        super.onPause();
-        waitingForOpponent = false;
-        updateHandler.removeCallbacks(gameUpdateTask);
-    }
-
-    @Override
-    public void onBackPressed(){
-        if (returnToMenu) {
-            Intent i = new Intent(getApplicationContext(), MenuActivity.class);
-            startActivity(i);
-        }
-        else super.onBackPressed();
-    }
-
-    @Override
-    public void onResume(){
-        super.onResume();
-        if (chessGame == null){
+        if (chessGame == null) {
             Player<String> playerOne;
             Player<String> playerTwo;
-            switch (opponentType){
+            switch (opponentType) {
                 case "local":
                     playerOne = new Player<>("WHITE", Game.Color.WHITE);
                     playerTwo = new Player<>("BLACK", Game.Color.BLACK);
                     chessGame = new Game(playerOne, playerTwo);
                     waitingForOpponent = false;
                     boardView.updateValidMoves();
+
                     break;
                 case "network":
                     try {
                         userIsWhite = PostOffice.isWhite(gameJSON.getString("white_md5uuid"), uuid);
-                        waitingForOpponent =  gameJSON.getBoolean("w") ^ userIsWhite;
-                        System.out.println("UserIsWhite: "+userIsWhite+" waitingForOpponent: "+waitingForOpponent);
+                        waitingForOpponent = gameJSON.getBoolean("w") ^ userIsWhite;
+                        System.out.println("UserIsWhite: " + userIsWhite + " waitingForOpponent: " + waitingForOpponent);
 
-                        statusBarOpponent.setText(waitingForOpponent ? getString(R.string.waiting_for_player) : "");
-                        statusBarUser.setText(waitingForOpponent ? "" : getString(R.string.waiting_for_player));
+                        statusBarOpponent.setText(waitingForOpponent ? getString(R.string.waiting_for_player) : getString(R.string.waiting_for_opponent));
+                        statusBarUser.setText(waitingForOpponent ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
+
 
                         new AsyncTask<JSONObject, Void, Void>() {
                             @Override
@@ -205,17 +213,17 @@ public class GameActivity extends AppCompatActivity {
 
                             @Override
                             protected void onPostExecute(Void res) {
-                                boardView.setBoard(chessGame.getCurrentBoard());
-                                deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
-                                deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
-                                boardView.updateValidMoves();
 
-                                if (waitingForOpponent){
+                                        boardView.setBoard(chessGame.getCurrentBoard());
+                                        deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
+                                        deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
+                                        boardView.updateValidMoves();
+                                if (waitingForOpponent) {
                                     updateHandler.postDelayed(gameUpdateTask, 1000);
                                 }
                             }
                         }.execute(gameJSON);
-                    } catch (Exception e){
+                    } catch (Exception e) {
                         Toast.makeText(getApplicationContext(), String.format("Could not initialize game. Your opponent is likely hacking."), Toast.LENGTH_SHORT).show();
                     }
                     break;
@@ -229,13 +237,19 @@ public class GameActivity extends AppCompatActivity {
                             : new Chesster<>("WHITE", Game.Color.WHITE);
                     chessGame = new Game(playerOne, playerTwo);
 
-                    boardView.updateValidMoves();
-
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            boardView.updateValidMoves();
+                        }
+                    });
                     break;
             }
-            if (!userIsWhite)
-                boardView.flipBoard();
         }
+
+        if (!userIsWhite)
+            boardView.flipBoard();
+
     }
 
     private void gameAdvance(String in, boolean netMove){

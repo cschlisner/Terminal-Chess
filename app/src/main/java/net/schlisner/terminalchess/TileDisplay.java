@@ -47,18 +47,12 @@ public class TileDisplay {
         tilePaint.setStyle(Paint.Style.STROKE);
         tilePaint.setAntiAlias(true);
         piecePaint.setAntiAlias(true);
-
         tileColor = ContextCompat.getColor(context, R.color.chessBoardLight);
-
-
-        Typeface tf = Typeface.createFromAsset(context.getAssets(), "fonts/robotolight.ttf");
-        piecePaint.setTypeface(tf);
-
         fillColor = (tile.color.equals(Game.Color.BLACK)) ? ContextCompat.getColor(context, R.color.chessBoardDark): ContextCompat.getColor(context, R.color.chessBoardLight);
-
         chessBoardHighlight = ContextCompat.getColor(context, R.color.chessBoardHighlight);
         chessBoardCapture = ContextCompat.getColor(context, R.color.chessBoardCapture);
 
+        piecePaint.setTypeface(FontManager.getTypeFace());
         piecePaint.setColor(Color.WHITE);
         if (tile.getOccupator() != null){
             pieceColor = ContextCompat.getColor(context, tile.getOccupator().color.equals(Game.Color.BLACK) ? R.color.chessPiecesDark : R.color.chessPiecesLight);

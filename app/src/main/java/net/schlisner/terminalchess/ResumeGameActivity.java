@@ -134,13 +134,6 @@ public class ResumeGameActivity extends AppCompatActivity {
 //                        e.printStackTrace();
 //                    }
 //                }
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        pb.setVisibility(View.GONE);
-                        loadingMsg.setVisibility(View.GONE);
-                    }
-                });
                 refreshList();
             }
         });
@@ -184,6 +177,15 @@ public class ResumeGameActivity extends AppCompatActivity {
                             noGamesMsg.setVisibility(View.VISIBLE);
                         else noGamesMsg.setVisibility(View.GONE);
                         System.out.println("Updated games from network: "+(System.currentTimeMillis()-t1));
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                pb.setVisibility(View.GONE);
+                                loadingMsg.setVisibility(View.GONE);
+                            }
+                        });
+
                     } catch (Exception e){
                         e.printStackTrace();
                     }

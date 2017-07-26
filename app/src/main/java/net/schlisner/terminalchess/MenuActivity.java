@@ -91,6 +91,10 @@ public class MenuActivity extends AppCompatActivity {
                 return true;
             }
         });
+
+        // TODO: load user-set font ?
+        FontManager.setFont(getApplicationContext(), "seguisym.ttf");
+
     }
 
     // get list of games user is enganged in, display them in a list for them to choose from

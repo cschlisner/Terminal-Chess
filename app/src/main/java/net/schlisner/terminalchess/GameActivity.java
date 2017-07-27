@@ -19,7 +19,7 @@ import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.Random;
-import net.schlisner.terminalchess.Timer;
+import java.util.concurrent.Exchanger;
 
 import uniChess.*;
 
@@ -31,6 +31,7 @@ public class GameActivity extends AppCompatActivity {
     Runnable gameUpdateTask;
     Handler updateHandler;
     HandlerThread mHandlerThread = new HandlerThread("HandlerThread");
+    SharedPreferences sharedPref = this.getSharedPreferences("Dank Memes(c)", Context.MODE_PRIVATE);
 
     String uuid;
 
@@ -45,13 +46,11 @@ public class GameActivity extends AppCompatActivity {
     TextView statusBarUser;
     ProgressBar pb;
 
-    Timer activityTimer = new Timer();
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Fullscreen everything
         super.onCreate(savedInstanceState);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         ActionBar actionBar = getSupportActionBar();
         if (actionBar!=null) actionBar.hide();
 
@@ -323,7 +322,6 @@ public class GameActivity extends AppCompatActivity {
 
     private void saveGameAndExit(String in){
         // Save game
-        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
         String completedGames = sharedPref.getString("completedGames", null);
         JSONArray completedGameArray = null;
         try {
@@ -339,7 +337,7 @@ public class GameActivity extends AppCompatActivity {
         finish();
     }
 
-    private void sendMove(String move){
+    private void sendMove(final String move){
         System.out.println("Sending move");
         PostOffice.sendMove(move, uuid, chessGame.ID, boardView.getLayout(), new PostOffice.MailCallback() {
             @Override
@@ -347,9 +345,23 @@ public class GameActivity extends AppCompatActivity {
             }
             @Override
             public void after(String s) {
-                System.out.println(s);
+                String games = sharedPref.getString("savedGames", null);
+                if (games != null){
+                    try {
+                        JSONArray gameArr = new JSONArray(games);
+                        for (int i = 0; i < gameArr.length(); ++i){
+
+                            if (gameArr.optJSONObject(i).optString("id").equals(gameJSON.optString("id")))
+                                gameArr.optJSONObject(i).getJSONArray("moves").put(move);
+                        }
+                        SharedPreferences.Editor e = sharedPref.edit();
+                        e.putString("savedGames", gameArr.toString());
+                        e.apply();
+                    }catch (Exception e){}
+                }
                 updateHandler.postDelayed(gameUpdateTask, 1000);
             }
         });
+
     }
 }

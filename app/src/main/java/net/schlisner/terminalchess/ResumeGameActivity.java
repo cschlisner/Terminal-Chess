@@ -98,7 +98,7 @@ public class ResumeGameActivity extends AppCompatActivity {
             }
         });
 
-        sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        sharedPref = this.getSharedPreferences("Dank Memes(c)",Context.MODE_PRIVATE);
 
         ht = new HandlerThread("networkupdate");
         ht.start();
@@ -161,9 +161,6 @@ public class ResumeGameActivity extends AppCompatActivity {
                         }
                     });
                     try {
-//                        SharedPreferences.Editor e = sharedPref.edit();
-//                        e.putString("savedGames", gamesJSON.toString());
-//                        e.apply();
                         long t1 = System.currentTimeMillis();
                         JSONArray gamesJSON = new JSONArray(response);
                         System.out.println(response);
@@ -173,10 +170,17 @@ public class ResumeGameActivity extends AppCompatActivity {
                             cgla.add(gamesJSON.getJSONObject(i));
                         cgla.notifyDataSetChanged();
 
+                        SharedPreferences.Editor e = sharedPref.edit();
+                        e.putString("savedGames", gamesJSON.toString());
+                        e.apply();
+
                         if (gamesJSON.length() == 0)
                             noGamesMsg.setVisibility(View.VISIBLE);
                         else noGamesMsg.setVisibility(View.GONE);
                         System.out.println("Updated games from network: "+(System.currentTimeMillis()-t1));
+
+                        ChessUpdater updater = new ChessUpdater();
+                        updater.setAlarm(getApplicationContext());
 
                         runOnUiThread(new Runnable() {
                             @Override

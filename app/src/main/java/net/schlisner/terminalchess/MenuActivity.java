@@ -40,7 +40,7 @@ public class MenuActivity extends AppCompatActivity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_menu);
 
-        sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        sharedPref = this.getSharedPreferences("Dank Memes(c)", Context.MODE_PRIVATE);
         uuid = sharedPref.getString("uuid", "");
         System.out.println(uuid);
         uuidView = (TextView) findViewById(R.id.uuidView);

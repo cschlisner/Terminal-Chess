@@ -48,4 +48,4 @@ while (True):
 	r.db("chess").table("users").get(player_two["id"]).update({
 		"online": False
 	}).run(conn)
-	print("created game: " + create_game(player_one["id"], player_two["id"]))
+	print("created game: " + create_game(player_one["id"], player_two["id"])+ " : "+ player_one["id"]+","+player_two["id"]);

@@ -8,11 +8,16 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.SystemClock;
 import android.support.v4.content.ContextCompat;
 
 import com.rethinkdb.ast.query.gen.Json;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
+
+import uniChess.Move;
+import uniChess.Piece;
 
 import static android.content.Context.NOTIFICATION_SERVICE;
 
@@ -33,43 +38,54 @@ public class ChessUpdater extends BroadcastReceiver {
             String savedGameList = sharedPref.getString("savedGames", null);
             String uuid = sharedPref.getString("uuid", "");
 
+            System.out.println("Updating Games uuid="+uuid);
             JSONArray savedGames = new JSONArray(savedGameList);
             JSONArray games = PostOffice.listGamesJSON(uuid);
 
-            boolean newGame = savedGameList.length() != games.length();
+            boolean newGame = savedGames.length() != games.length();
 
             if (newGame){
-                //idk
+
+                System.out.println("nice meme: ");
             }
             else {
                 int newMoves = 0;
-                int game = 0;
+                JSONObject game = null;
 
                 for (int i = 0; i < games.length(); ++i){
-                    if (games.getJSONObject(i).getJSONArray("moves").length() >
-                            savedGames.getJSONObject(i).getJSONArray("moves").length()) {
+                    JSONObject netGame = games.getJSONObject(i);
+                    JSONObject savedGame = savedGames.getJSONObject(i);
+                    System.out.format("network: %s\nsaved: %s", netGame, savedGame);
+
+                    if (netGame.getJSONArray("moves").length() > savedGame.getJSONArray("moves").length()){
                         ++newMoves;
-                        game = i;
+                        game = netGame;
                     }
+
                 }
 
                 if (newMoves > 0){
                     Intent notificationIntent;
                     String text;
-                    if (newMoves == 1) {
-                        JSONArray mv = games.getJSONObject(game).getJSONArray("moves");
-                        text = mv.getString(mv.length()-1);
 
-                        notificationIntent = new Intent(context, GameActivity.class);
-                        notificationIntent.putExtra("uuid", uuid);
-                        notificationIntent.putExtra("gameJSON", games.getJSONObject(game).toString());
-                        notificationIntent.putExtra("opponent", "network");
-                    }
-                    else {
-                        text = "Multiple attacls underway.";
+                    // Starting wrong game??
+//                    if (newMoves == 1) {
+//                        JSONArray mv = game.getJSONArray("moves");
+//
+//                        String an = mv.getString(mv.length()-1);
+//                        Piece p = Piece.synthesizePiece(an.charAt(0));
+//                        text = p.getSymbol()+" -> "+an.substring(3);
+//
+//                        notificationIntent = new Intent(context, GameActivity.class);
+//                        notificationIntent.putExtra("uuid", uuid);
+//                        notificationIntent.putExtra("gameJSON", game.toString());
+//                        notificationIntent.putExtra("opponent", "network");
+//                    }
+//                    else {
+                        text = "Attacks underway.";
                         notificationIntent = new Intent(context, ResumeGameActivity.class);
                         notificationIntent.putExtra("uuid", uuid);
-                    }
+//                    }
 
 
                     PendingIntent pIntent = PendingIntent.getActivity(context, 0, notificationIntent, 0);
@@ -77,8 +93,9 @@ public class ChessUpdater extends BroadcastReceiver {
 // build notification
 // the addAction re-use the same intent to keep the example short
                     Notification n  = new Notification.Builder(context)
-                            .setContentTitle("Opponent has advanced.")
+                            .setContentTitle((newMoves > 1) ? "Opponents have advanced.":"Opponent has advanced.")
                             .setContentText(text)
+                            .setLights(ContextCompat.getColor(context, R.color.chessBoardHighlight), 500, 1000)
                             .setColor(ContextCompat.getColor(context, R.color.chessBoardHighlight))
                             .setSmallIcon(R.drawable.ic_stat_)
                             .setContentIntent(pIntent)
@@ -99,10 +116,12 @@ public class ChessUpdater extends BroadcastReceiver {
 
     public void setAlarm(Context context)
     {
+        System.out.println("Alarm Set");
         AlarmManager am =( AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
         Intent i = new Intent(context, ChessUpdater.class);
         PendingIntent pi = PendingIntent.getBroadcast(context, 0, i, 0);
-        am.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 1000 * 60 * 1, pi); // Millisec * Second * Minute
+        am.setRepeating(AlarmManager.ELAPSED_REALTIME,
+                SystemClock.elapsedRealtime()+1000, 1000*60, pi); // Millisec * Second * Minute
     }
 
     public void cancelAlarm(Context context)

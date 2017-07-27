@@ -75,6 +75,8 @@ public class NetworkLobbyActivity extends AppCompatActivity {
                                 .putExtra("startFromLobby", true)
                                 .putExtra("gameJSON", gameJSON.toString());
                         startActivity(i);
+                        ChessUpdater updater = new ChessUpdater();
+                        updater.setAlarm(getApplicationContext());
                         finish();
                     }
 

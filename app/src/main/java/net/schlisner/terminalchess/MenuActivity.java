@@ -71,10 +71,10 @@ public class MenuActivity extends AppCompatActivity {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 try {
-                                    uuid = po.register();
+                                    uuid = PostOffice.register();
                                     SharedPreferences.Editor editor = sharedPref.edit();
                                     editor.putString("uuid", uuid);
-                                    editor.commit();
+                                    editor.apply();
                                     ((TextView)tv).setText(uuid);
                                 } catch (Exception e){
                                     Toast.makeText(getApplicationContext(), "Network took too long to register user", Toast.LENGTH_SHORT).show();

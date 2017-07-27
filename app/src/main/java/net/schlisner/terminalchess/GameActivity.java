@@ -28,10 +28,45 @@ public class GameActivity extends AppCompatActivity {
     Game chessGame;
     private JSONObject gameJSON;
 
-    Runnable gameUpdateTask;
+    Runnable gameUpdateTask = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                if (stop_updates) return;
+                gameJSON = PostOffice.refreshGameJSON(gameJSON.getString("id"));
+                if (gameJSON == null)
+                    return;
+                System.out.println(gameJSON.getJSONArray("moves"));
+                waitingForOpponent =  gameJSON.getBoolean("w") ^ userIsWhite;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        statusBarOpponent.setText(waitingForOpponent ? getString(R.string.waiting_for_player) : getString(R.string.waiting_for_opponent));
+                        statusBarUser.setText(waitingForOpponent ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
+                    }
+                });
+
+                if (waitingForOpponent)
+                    updateHandler.postDelayed(this, 1000);
+                else {
+                    System.out.println("Running last input");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                gameAdvance(gameJSON.getJSONArray("moves").getString(gameJSON.getJSONArray("moves").length() - 1), true);
+                            } catch (Exception e){}
+                        }
+                    });
+                }
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+        }
+    };
     Handler updateHandler;
     HandlerThread mHandlerThread = new HandlerThread("HandlerThread");
-    SharedPreferences sharedPref = this.getSharedPreferences("Dank Memes(c)", Context.MODE_PRIVATE);
+    SharedPreferences sharedPref;
 
     String uuid;
 
@@ -84,6 +119,9 @@ public class GameActivity extends AppCompatActivity {
 
         mHandlerThread.start();
         updateHandler = new Handler(mHandlerThread.getLooper());
+
+        sharedPref = this.getSharedPreferences("Dank Memes(c)", Context.MODE_PRIVATE);
+
     }
 
     @Override
@@ -140,46 +178,6 @@ public class GameActivity extends AppCompatActivity {
                 return true;
             }
         });
-
-        gameUpdateTask = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    if (stop_updates) return;
-                    gameJSON = PostOffice.refreshGameJSON(gameJSON.getString("id"));
-                    if (gameJSON == null)
-                        return;
-                    System.out.println(gameJSON.getJSONArray("moves"));
-                    waitingForOpponent =  gameJSON.getBoolean("w") ^ userIsWhite;
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            statusBarOpponent.setText(waitingForOpponent ? getString(R.string.waiting_for_player) : getString(R.string.waiting_for_opponent));
-                            statusBarUser.setText(waitingForOpponent ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
-                        }
-                    });
-
-                    if (waitingForOpponent)
-                        updateHandler.postDelayed(this, 1000);
-                    else {
-                        System.out.println("Running last input");
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    gameAdvance(gameJSON.getJSONArray("moves").getString(gameJSON.getJSONArray("moves").length() - 1), true);
-                                } catch (Exception e){}
-                            }
-                        });
-                    }
-                } catch (Exception e){
-                    e.printStackTrace();
-                }
-            }
-        };
-
-
-
 
         if (chessGame == null) {
             Player<String> playerOne;
@@ -275,6 +273,7 @@ public class GameActivity extends AppCompatActivity {
                         break;
 
                     case "network":
+                        saveMove(in);
                         if (!netMove)
                             sendMove(in);
                         break;
@@ -345,23 +344,25 @@ public class GameActivity extends AppCompatActivity {
             }
             @Override
             public void after(String s) {
-                String games = sharedPref.getString("savedGames", null);
-                if (games != null){
-                    try {
-                        JSONArray gameArr = new JSONArray(games);
-                        for (int i = 0; i < gameArr.length(); ++i){
-
-                            if (gameArr.optJSONObject(i).optString("id").equals(gameJSON.optString("id")))
-                                gameArr.optJSONObject(i).getJSONArray("moves").put(move);
-                        }
-                        SharedPreferences.Editor e = sharedPref.edit();
-                        e.putString("savedGames", gameArr.toString());
-                        e.apply();
-                    }catch (Exception e){}
-                }
                 updateHandler.postDelayed(gameUpdateTask, 1000);
             }
         });
+    }
 
+    private void saveMove(String move){
+        String games = sharedPref.getString("savedGames", null);
+        if (games != null){
+            try {
+                JSONArray gameArr = new JSONArray(games);
+                for (int i = 0; i < gameArr.length(); ++i){
+
+                    if (gameArr.optJSONObject(i).optString("id").equals(gameJSON.optString("id")))
+                        gameArr.optJSONObject(i).getJSONArray("moves").put(move);
+                }
+                SharedPreferences.Editor e = sharedPref.edit();
+                e.putString("savedGames", gameArr.toString());
+                e.apply();
+            }catch (Exception e){}
+        }
     }
 }

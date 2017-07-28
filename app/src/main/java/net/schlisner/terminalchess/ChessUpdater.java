@@ -55,43 +55,42 @@ public class ChessUpdater extends BroadcastReceiver {
                 for (int i = 0; i < games.length(); ++i){
                     JSONObject netGame = games.getJSONObject(i);
                     JSONObject savedGame = savedGames.getJSONObject(i);
-                    System.out.format("network: %s\nsaved: %s", netGame, savedGame);
+                    System.out.format("network: %s\nsaved: %s\n", netGame, savedGame);
 
                     if (netGame.getJSONArray("moves").length() > savedGame.getJSONArray("moves").length()){
                         ++newMoves;
                         game = netGame;
                     }
-
                 }
+                System.out.println("Modified game: "+game.toString());
 
                 if (newMoves > 0){
                     Intent notificationIntent;
                     String text;
 
                     // Starting wrong game??
-//                    if (newMoves == 1) {
-//                        JSONArray mv = game.getJSONArray("moves");
-//
-//                        String an = mv.getString(mv.length()-1);
-//                        Piece p = Piece.synthesizePiece(an.charAt(0));
-//                        text = p.getSymbol()+" -> "+an.substring(3);
-//
-//                        notificationIntent = new Intent(context, GameActivity.class);
-//                        notificationIntent.putExtra("uuid", uuid);
-//                        notificationIntent.putExtra("gameJSON", game.toString());
-//                        notificationIntent.putExtra("opponent", "network");
-//                    }
-//                    else {
+                    if (newMoves == 1) {
+                        JSONArray mv = game.getJSONArray("moves");
+                        String an = mv.getString(mv.length()-1);
+                        Piece p = Piece.synthesizePiece(an.charAt(0));
+                        text = p.getSymbol()+" -> "+an.substring(3);
+
+                        notificationIntent = new Intent(context, GameActivity.class);
+                        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        notificationIntent.putExtra("uuid", uuid);
+                        notificationIntent.putExtra("gameJSON", game.toString());
+                        notificationIntent.putExtra("opponent", "network");
+                    }
+                    else {
                         text = "Attacks underway.";
                         notificationIntent = new Intent(context, ResumeGameActivity.class);
                         notificationIntent.putExtra("uuid", uuid);
-//                    }
+                    }
 
 
-                    PendingIntent pIntent = PendingIntent.getActivity(context, 0, notificationIntent, 0);
+                    PendingIntent pIntent = PendingIntent.getActivity(context, 667, notificationIntent,
+                                                PendingIntent.FLAG_CANCEL_CURRENT);
 
-// build notification
-// the addAction re-use the same intent to keep the example short
                     Notification n  = new Notification.Builder(context)
                             .setContentTitle((newMoves > 1) ? "Opponents have advanced.":"Opponent has advanced.")
                             .setContentText(text)
@@ -105,7 +104,7 @@ public class ChessUpdater extends BroadcastReceiver {
                     NotificationManager notificationManager =
                             (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
 
-                    notificationManager.notify(0, n);
+                    notificationManager.notify(665, n);
 
                 }
             }
@@ -114,21 +113,28 @@ public class ChessUpdater extends BroadcastReceiver {
         }
     }
 
-    public void setAlarm(Context context)
+    public static final String intentAction = "net.schlisner.TerminalChess.ChessUpdate";
+
+    public static void setAlarm(Context context)
     {
         System.out.println("Alarm Set");
+        Intent i = new Intent(intentAction);
+        i.setClass(context, ChessUpdater.class);
+        PendingIntent pi = PendingIntent.getBroadcast(context, 666, i, 0);
+
         AlarmManager am =( AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
-        Intent i = new Intent(context, ChessUpdater.class);
-        PendingIntent pi = PendingIntent.getBroadcast(context, 0, i, 0);
         am.setRepeating(AlarmManager.ELAPSED_REALTIME,
-                SystemClock.elapsedRealtime()+1000, 1000*60, pi); // Millisec * Second * Minute
+                SystemClock.elapsedRealtime()+1000, 1000*10, pi); // Millisec * Second * Minute
     }
 
-    public void cancelAlarm(Context context)
+    public static void cancelAlarm(Context context)
     {
-        Intent intent = new Intent(context, ChessUpdater.class);
-        PendingIntent sender = PendingIntent.getBroadcast(context, 0, intent, 0);
+        System.out.println("Alarm Cancelled");
+        Intent i = new Intent(intentAction);
+        i.setClass(context, ChessUpdater.class);
+        PendingIntent sender = PendingIntent.getBroadcast(context, 666, i, 0);
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         alarmManager.cancel(sender);
+        sender.cancel();
     }
 }

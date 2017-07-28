@@ -94,6 +94,7 @@ public class MenuActivity extends AppCompatActivity {
 
         // TODO: load user-set font ?
         FontManager.setFont(getApplicationContext(), "seguisym.ttf");
+        ChessUpdater.cancelAlarm(this);
 
     }
 
@@ -121,5 +122,9 @@ public class MenuActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-
+    @Override
+    public void onPause(){
+        super.onPause();
+        ChessUpdater.setAlarm(this);
+    }
 }

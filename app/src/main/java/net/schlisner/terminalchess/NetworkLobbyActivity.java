@@ -1,6 +1,7 @@
 package net.schlisner.terminalchess;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.AsyncTask;
@@ -47,7 +48,7 @@ public class NetworkLobbyActivity extends AppCompatActivity {
 
         try {
             gameCount = PostOffice.listGamesJSON(uuid).length();
-            System.out.println("gamecount = "+gameCount);
+//            System.out.println("gamecount = "+gameCount);
         } catch (Exception e){
             // couldn't list games
         }
@@ -62,21 +63,20 @@ public class NetworkLobbyActivity extends AppCompatActivity {
                     JSONArray gl = PostOffice.listGamesJSON(uuid);
 
                     JSONObject gameJSON = (gl.length() > gameCount) ? gl.getJSONObject(0) : null;
-                    System.out.println("gamecount = "+gl.length());
+//                    System.out.println("gamecount = "+gl.length());
 
                     // if we aren't wait a second and check again
                     if (gameJSON == null)
                         updateHandler.postDelayed(this, 1000);
                         // if we are start up the game and enter it
                     else {
+
                         Intent i = new Intent(getApplicationContext(), GameActivity.class)
                                 .putExtra("opponent", "network")
                                 .putExtra("uuid", uuid)
                                 .putExtra("startFromLobby", true)
                                 .putExtra("gameJSON", gameJSON.toString());
                         startActivity(i);
-                        ChessUpdater updater = new ChessUpdater();
-                        updater.setAlarm(getApplicationContext());
                         finish();
                     }
 

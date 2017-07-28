@@ -137,7 +137,13 @@ public class ResumeGameActivity extends AppCompatActivity {
                 refreshList();
             }
         });
+        ChessUpdater.cancelAlarm(this);
+    }
 
+    @Override
+    public void onPause(){
+        super.onPause();
+        ChessUpdater.setAlarm(this);
     }
 
     // updates existing gameList with data from network
@@ -178,9 +184,6 @@ public class ResumeGameActivity extends AppCompatActivity {
                             noGamesMsg.setVisibility(View.VISIBLE);
                         else noGamesMsg.setVisibility(View.GONE);
                         System.out.println("Updated games from network: "+(System.currentTimeMillis()-t1));
-
-                        ChessUpdater updater = new ChessUpdater();
-                        updater.setAlarm(getApplicationContext());
 
                         runOnUiThread(new Runnable() {
                             @Override

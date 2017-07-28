@@ -207,6 +207,15 @@ public class PostOffice {
         }
     }
 
+    public static void leaveGame(String uuid, String gameID) {
+        try{
+            MailSend leaveGame = new MailSend();
+            leaveGame.execute(Chives, "action", "leavegame", "game", gameID, "uuid", uuid);
+        } catch (Exception e){
+            return;
+        }
+    }
+
     /**
      * Determines which player a user is in a game given the hashes of the player uuids and the users
      * uuid
@@ -231,6 +240,8 @@ public class PostOffice {
         }
         return null;
     }
+
+
 
     public static abstract class MailCallback {
         protected Object[] arguments;

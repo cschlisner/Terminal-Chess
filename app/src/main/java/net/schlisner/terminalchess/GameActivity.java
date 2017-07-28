@@ -64,6 +64,31 @@ public class GameActivity extends AppCompatActivity {
             }
         }
     };
+
+    View.OnTouchListener boardTL = new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View v, MotionEvent e) {
+            if (!waitingForOpponent && v instanceof BoardView) {
+                BoardView bV = (BoardView) v;
+                float x = e.getX();
+                float y = e.getY();
+                switch (e.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        Move selection = bV.selectTile((int)x, (int)y, userIsWhite ? chessGame.getPlayer(Game.Color.WHITE) : chessGame.getPlayer(Game.Color.BLACK));
+                        if (selection != null){
+                            System.out.println("Advancing: "+selection);
+                            gameAdvance(selection.getANString(), false);
+                        }
+                        break;
+                }
+                return true;
+            }
+            return true;
+        }
+    };
+
     Handler updateHandler;
     HandlerThread mHandlerThread = new HandlerThread("HandlerThread");
     SharedPreferences sharedPref;
@@ -103,8 +128,6 @@ public class GameActivity extends AppCompatActivity {
         statusBarUser = (TextView) findViewById(R.id.statusBarUser);
 
         Intent menuIntent = getIntent();
-        if (menuIntent.getBooleanExtra("startFromLobby", false))
-            returnToMenu = true;
 
         opponentType = menuIntent.getStringExtra("opponent");
         uuid = menuIntent.getStringExtra("uuid");
@@ -112,15 +135,32 @@ public class GameActivity extends AppCompatActivity {
 
         try {
             gameJSON = new JSONObject(gameJSONString);
-            System.out.println("Starting Game: "+gameJSON.getString("id"));
+            System.out.println("Starting Game: "+ gameJSON.getString("id"));
             boardView.setLayout(gameJSON);
-        } catch (Exception e){}
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        sharedPref = this.getSharedPreferences("Dank Memes(c)", Context.MODE_PRIVATE);
+        if (menuIntent.getBooleanExtra("startFromLobby", false)) {
+            returnToMenu = true;
+            String games = sharedPref.getString("savedGames", null);
+            if (games != null){
+                try {
+                    JSONArray gameArr = new JSONArray(games);
+                    gameArr.put(gameJSON);
+                    SharedPreferences.Editor e = sharedPref.edit();
+                    e.putString("savedGames", gameArr.toString());
+                    e.apply();
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }
 
 
         mHandlerThread.start();
         updateHandler = new Handler(mHandlerThread.getLooper());
 
-        sharedPref = this.getSharedPreferences("Dank Memes(c)", Context.MODE_PRIVATE);
 
     }
 
@@ -137,6 +177,7 @@ public class GameActivity extends AppCompatActivity {
         waitingForOpponent = false;
         updateHandler.removeCallbacks(gameUpdateTask);
         stop_updates = true;
+        ChessUpdater.setAlarm(this);
     }
 
     @Override
@@ -155,29 +196,7 @@ public class GameActivity extends AppCompatActivity {
     @Override
     public void onResume(){
         super.onResume();
-        boardView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent e) {
-                if (!waitingForOpponent && v instanceof BoardView) {
-                    BoardView bV = (BoardView) v;
-                    float x = e.getX();
-                    float y = e.getY();
-                    switch (e.getAction()) {
-                        case MotionEvent.ACTION_DOWN:
-                            break;
-                        case MotionEvent.ACTION_UP:
-                            Move selection = bV.selectTile((int)x, (int)y, userIsWhite ? chessGame.getPlayer(Game.Color.WHITE) : chessGame.getPlayer(Game.Color.BLACK));
-                            if (selection != null){
-                                System.out.println("Advancing: "+selection);
-                                gameAdvance(selection.getANString(), false);
-                            }
-                            break;
-                    }
-                    return true;
-                }
-                return true;
-            }
-        });
+        boardView.setOnTouchListener(boardTL);
 
         if (chessGame == null) {
             Player<String> playerOne;
@@ -189,7 +208,6 @@ public class GameActivity extends AppCompatActivity {
                     chessGame = new Game(playerOne, playerTwo);
                     waitingForOpponent = false;
                     boardView.updateValidMoves();
-
                     break;
                 case "network":
                     try {
@@ -210,11 +228,10 @@ public class GameActivity extends AppCompatActivity {
 
                             @Override
                             protected void onPostExecute(Void res) {
-
-                                        boardView.setBoard(chessGame.getCurrentBoard());
-                                        deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
-                                        deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
-                                        boardView.updateValidMoves();
+                                boardView.setBoard(chessGame.getCurrentBoard());
+                                deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
+                                deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
+                                boardView.updateValidMoves();
                                 if (waitingForOpponent) {
                                     updateHandler.postDelayed(gameUpdateTask, 1000);
                                 }
@@ -246,6 +263,8 @@ public class GameActivity extends AppCompatActivity {
 
         if (!userIsWhite)
             boardView.flipBoard();
+
+        ChessUpdater.cancelAlarm(this);
 
     }
 
@@ -327,10 +346,13 @@ public class GameActivity extends AppCompatActivity {
             completedGameArray = completedGames != null ? new JSONArray(completedGames) : new JSONArray();
             gameJSON.getJSONArray("moves").put(in);
             completedGameArray.put(gameJSON);
+            PostOffice.leaveGame(uuid, gameJSON.getString("id"));
         }catch (Exception e){e.printStackTrace();}
         SharedPreferences.Editor e =  sharedPref.edit();
         e.putString("completedGames", completedGameArray.toString());
         e.apply();
+
+
         Intent i = new Intent(getApplicationContext(), MenuActivity.class);
         startActivity(i);
         finish();
@@ -356,13 +378,15 @@ public class GameActivity extends AppCompatActivity {
                 JSONArray gameArr = new JSONArray(games);
                 for (int i = 0; i < gameArr.length(); ++i){
 
-                    if (gameArr.optJSONObject(i).optString("id").equals(gameJSON.optString("id")))
+                    if (gameArr.optJSONObject(i).getString("id").equals(gameJSON.getString("id")))
                         gameArr.optJSONObject(i).getJSONArray("moves").put(move);
                 }
                 SharedPreferences.Editor e = sharedPref.edit();
                 e.putString("savedGames", gameArr.toString());
                 e.apply();
-            }catch (Exception e){}
+            }catch (Exception e){
+                e.printStackTrace();
+            }
         }
     }
 }

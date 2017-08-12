@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:keepScreenOn="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/black"
@@ -27,6 +28,7 @@
         android:typeface="monospace" />
 
     <net.schlisner.terminalchess.BoardView
+        android:transitionName="@string/transition_boardview"
         android:id="@+id/boardviewer"
         style="@style/AppTheme.meme"
         android:layout_width="wrap_content"
@@ -54,6 +56,7 @@
 
     <TextView
         android:id="@+id/statusBarUser"
+        android:transitionName="@string/transition_statusbar"
         android:layout_width="wrap_content"
         android:layout_height="10dp"
         android:layout_alignParentBottom="true"

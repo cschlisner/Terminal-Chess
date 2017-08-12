@@ -1,5 +1,6 @@
 package net.schlisner.terminalchess;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -10,11 +11,14 @@ import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.SystemClock;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Layout;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,8 +43,8 @@ import uniChess.Board;
 import uniChess.Game;
 
 public class ResumeGameActivity extends AppCompatActivity {
-
-    private String uuid;
+    final Activity activity = this;
+    private static String uuid;
     ListView gameList;
     SwipeRefreshLayout srl;
     ProgressBar pb;
@@ -57,7 +61,7 @@ public class ResumeGameActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        ActionBar actionBar = getSupportActionBar();
+        final ActionBar actionBar = getSupportActionBar();
         actionBar.hide();
 
         Intent menuIntent = getIntent();
@@ -74,7 +78,12 @@ public class ResumeGameActivity extends AppCompatActivity {
                         .putExtra("opponent", "network")
                         .putExtra("uuid", uuid)
                         .putExtra("gameJSON", (gameList.getAdapter().getItem(position)).toString());
-                startActivity(i);
+                ActivityOptionsCompat opt = ActivityOptionsCompat.makeSceneTransitionAnimation(activity,
+                        android.support.v4.util.Pair.create(view.findViewById(R.id.boardviewer_listicon), getString(R.string.transition_boardview)));
+//                getWindow().setAllowReturnTransitionOverlap(false);
+//                getWindow().setAllowEnterTransitionOverlap(false);
+//                startActivity(i);
+                ActivityCompat.startActivity(ResumeGameActivity.this, i, opt.toBundle());
             }
         });
 

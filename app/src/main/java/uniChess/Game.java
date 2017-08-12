@@ -18,13 +18,13 @@ public class Game implements Serializable{
 	
 	/** Colors */
 	public enum Color {WHITE, BLACK}
-	
+
 	/** Enables unicode output in string representations. */
 	public static boolean unicode = true;
 
 	/** Restricts unicode characters to filled in type. */
 	public static boolean useDarkChars = false;
-	
+
 	private boolean whiteMove = true;
 
 	/** Game Identifier */
@@ -35,7 +35,9 @@ public class Game implements Serializable{
 	private List<Board> boards = new ArrayList<>();
 
 	private Player white, black;
-	
+
+	private Move lastMove;
+
 	/** 
 	*	Creates a new Game between the supplied players starting from the gamestate
 	*	supplied through the gameString. This allows a game to be continued from 
@@ -175,6 +177,14 @@ public class Game implements Serializable{
 	}
 
 	/**
+	 * Returns the last move made in the game
+	 * @return
+	 */
+	public Move getLastMove(){
+		return lastMove;
+	}
+
+	/**
 	 * Converts single character representations of pieces to unicode representation.
 	 * lowercase is mapped to white pieces and uppercase is mapped to black pieces.
 	 * i.e.
@@ -229,11 +239,13 @@ public class Game implements Serializable{
 	*	@return The player who moved last.
 	*/
 	public GameEvent advance(String in){
+		Move move = null;
 		try {
-			if (white.draw && black.draw)
+			if (white.draw && black.draw) {
 				return GameEvent.DRAW;
+			}
 
-			Move move = Move.parseMove(getCurrentBoard(), getCurrentPlayer().color, in);
+			move = Move.parseMove(getCurrentBoard(), getCurrentPlayer().color, in);
 
 			Board cb = getCurrentBoard();
 			List<Move> legal = cb.getLegalMoves(getCurrentPlayer());
@@ -248,6 +260,9 @@ public class Game implements Serializable{
 
 			gameString += move.getANString()+",";
 
+			if (move != null)
+				lastMove = move;
+
 			if (Board.playerHasCheck(getCurrentBoard(), getDormantPlayer()) && getCurrentBoard().getLegalMoves(getCurrentPlayer()).isEmpty())
 				return GameEvent.CHECKMATE;
 
@@ -256,8 +271,6 @@ public class Game implements Serializable{
 
 			else if (Board.playerHasCheck(getCurrentBoard(), getDormantPlayer()))
 				return GameEvent.CHECK;
-
-
 		} catch (GameException ge){
 				
 				switch (ge.getType()) {

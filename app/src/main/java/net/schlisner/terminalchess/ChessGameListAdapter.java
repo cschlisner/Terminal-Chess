@@ -27,6 +27,14 @@ import uniChess.Game;
 class ChessGameListAdapter extends ArrayAdapter<JSONObject> {
     List<JSONObject> gamesJSON;
     String uuid;
+    static Handler h;
+
+    static {
+        HandlerThread ht = new HandlerThread("icon layout thread");
+        ht.start();
+        h = new Handler(ht.getLooper());
+
+    }
 
     public ChessGameListAdapter(Context c, List<JSONObject> glist, String uuid){
         super(c, -1, glist);
@@ -41,30 +49,13 @@ class ChessGameListAdapter extends ArrayAdapter<JSONObject> {
         final View rowView = inflater.inflate(R.layout.rowlayout, parent, false);
 
         TextView textView = (TextView) rowView.findViewById(R.id.gameIDTextView);
+        TextView userturn = (TextView) rowView.findViewById(R.id.userTurn);
         final JSONObject game = gamesJSON.get(position);
         textView.setText(game.optString("id").substring(0, 12));
 
-        HandlerThread ht = new HandlerThread(textView.getText().toString());
-        ht.start();
-        Handler h = new Handler(ht.getLooper());
-        h.post(new Runnable() {
-            @Override
-            public void run() {
-                BoardView icon = (BoardView) rowView.findViewById(R.id.icon);
-                TextView userturn = (TextView) rowView.findViewById(R.id.userTurn);
-
-                try {
-                    boolean isw = PostOffice.isWhite(game.getString("white_md5uuid"), uuid);
-                    if (!isw) {
-                        icon.flipBoard();
-                    }
-                    userturn.setText((game.getBoolean("w") ^ isw) ? getContext().getString(R.string.waiting_for_opponent)
-                                                                : getContext().getString(R.string.waiting_for_player));
-                } catch (Exception e){}
-                icon.setLayout(game);
-                icon.setMonochrome(true);
-            }
-        });
+        final boolean isw = PostOffice.isWhite(game.optString("white_md5uuid"), uuid);
+        userturn.setText((game.optBoolean("w") ^ isw) ? getContext().getString(R.string.waiting_for_opponent)
+                : getContext().getString(R.string.waiting_for_player));
 
         return rowView;
     }

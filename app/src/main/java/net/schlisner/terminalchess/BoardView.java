@@ -1,5 +1,8 @@
 package net.schlisner.terminalchess;
 
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
@@ -9,6 +12,7 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.widget.ActionBarOverlayLayout;
 import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -25,9 +29,6 @@ import java.util.List;
 
 import uniChess.*;
 
-/**
- * TODO: document your custom view class.
- */
 public class BoardView extends View {
 
     int paddingLeft = getPaddingLeft();
@@ -51,19 +52,89 @@ public class BoardView extends View {
         setBoard(new Board());
     }
 
-    public void setBoard(Board b){
+    int boardUpdates = 0;
+    public void setBoard(Board b) {
+        setBoard(b,false);
+    }
+
+    public void setBoard(Board b, boolean updatemoves){
+        ++boardUpdates;
         this.gameBoard = b;
         initTiles();
+
+        FontManager.setFont(getContext(), "seguisym.ttf");
+        if (updatemoves) {
+            updateValidMoves();
+        }
+
         invalidate();
     }
 
-    public void initTiles(){
+    public void initTiles() {
+        initTiles(false);
+    }
+
+    public void initTiles(boolean monochrome){
         for (int i = 0; i < 8; ++i){
             for (int j = 0; j < 8; ++j){
-               tileDisplays[i][j] = new TileDisplay(getContext(), gameBoard.getTile(i,7-j));
+                tileDisplays[i][j] = new TileDisplay(getContext(), gameBoard.getTile(i,7-j));
+                tileDisplays[i][j].monochrome = monochrome;
             }
         }
         currentlySelected = tileDisplays[0][0];
+    }
+
+    // tile display that is being animated should always be drawn last
+    TileDisplay animTile;
+    /**
+     * Animates move transition on board
+     * @param move move to animate
+     */
+    public void animateMove(final Move move, final Board board){
+        final TileDisplay origin = getTileDisplay(move.origin);
+        final TileDisplay destination = getTileDisplay(move.destination);
+
+        final float distx = destination.cx-origin.cx;
+        final float disty = destination.cy-origin.cy;
+
+        final float ox = origin.cx;
+        final float oy = origin.cy;
+
+        origin.animating = true;
+        animTile = origin;
+
+        final ValueAnimator animation = ValueAnimator.ofFloat(0, 1000);
+
+        animation.setDuration(2500);
+
+        animation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                float progress = valueAnimator.getAnimatedFraction();
+                // move attacking piece to destination tile,
+                // if there is an attacked piece in the destination tile
+                // lower the alpha value of the piece by an amount proportional
+                // to the distance between the attacking piece and the destination tile.
+
+                // the attacking piece will move to the destination tile while the attacked piece
+                // fades from view and possibly changes color.
+                System.out.format("Animating: %s %s %s\n", progress, origin.cx, origin.cy);
+                origin.cy = oy + progress*disty;
+                origin.cx = ox + progress*distx;
+                destination.setCharAlpha((int)((1.0-progress)*255f));
+                BoardView.this.invalidate();
+
+                if (progress == 1.0){
+                    origin.animating = false;
+                    setBoard(board, true);
+                }
+
+            }
+        });
+
+        animation.start();
+
+        invalidate();
     }
 
     TileDisplay[][] tileDisplays = new TileDisplay[8][8];
@@ -71,7 +142,23 @@ public class BoardView extends View {
     public void flipBoard(){
         flipped = !flipped;
     }
+    public void setFlipped(boolean flip){
+        flipped = flip;
+    }
+
     private boolean flipped = false;
+
+    /**
+     *	Returns the TileDisplay at a certain location, with the bottom left corner of the board
+     *	defined as (0,0) and the top right defined as (7,7).
+     * @param location
+     * @return
+     */
+    private TileDisplay getTileDisplay(Location location){
+        System.out.println("selecting: "+location);
+        System.out.format("returning: [%s][%s]\n", location.x, 7-location.y);
+        return tileDisplays[location.x][7-location.y];
+    }
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -79,12 +166,22 @@ public class BoardView extends View {
         borderPaint.setColor(ContextCompat.getColor(getContext(), R.color.chessBoardBorder));
         canvas.drawRect(0,0, canvas.getWidth(), 2f, borderPaint);
         tileDim = (((float)getWidth()-4) / 8.0f);
+        TileDisplay animTile = null;
+        int r=0, f=0;
         for (int i = 0; i < 8; ++i){
             for (int j = 0; j < 8; ++j) {
-                tileDisplays[flipped ? 7-i : i ][ flipped ? 7-j : j].draw(canvas, tileDim, (i*tileDim), 10+(j*tileDim));
+                TileDisplay dr = tileDisplays[flipped ? 7-i : i ][ flipped ? 7-j : j];
+                if (dr.animating) {
+                    r = i;
+                    f = j;
+                    animTile = dr;
+                }
+                else dr.draw(canvas, tileDim, (i*tileDim), 10+(j*tileDim));
             }
         }
         canvas.drawRect(0, canvas.getHeight()-2f, canvas.getWidth(), canvas.getHeight(), borderPaint);
+        if (animTile != null)
+            animTile.draw(canvas, tileDim, (r*tileDim), 10+(f*tileDim));
     }
 
     @Override
@@ -105,31 +202,22 @@ public class BoardView extends View {
         int width;
         int height;
 
-        //Measure Width
         if (widthMode == MeasureSpec.EXACTLY) {
-            //Must be this size
             width = widthSize;
         } else if (widthMode == MeasureSpec.AT_MOST) {
-            //Can't be bigger than...
             width = Math.min(desiredWidth, widthSize);
         } else {
-            //Be whatever you want
             width = desiredWidth;
         }
 
-        //Measure Height
         if (heightMode == MeasureSpec.EXACTLY) {
-            //Must be this size
             height = heightSize;
         } else if (heightMode == MeasureSpec.AT_MOST) {
-            //Can't be bigger than...
             height = Math.min(desiredHeight, heightSize);
         } else {
-            //Be whatever you want
             height = desiredHeight;
         }
 
-        //MUST CALL THIS
         setMeasuredDimension(width, height);
     }
 
@@ -143,7 +231,6 @@ public class BoardView extends View {
         List<TileDisplay> validDestinations = new ArrayList<>();
         for (TileDisplay[] tda : tileDisplays){
             for (TileDisplay td : tda){
-                td.virtualOccupator = null;
                 if (td.tile.getOccupator() != null){
                     validDestinations.clear();
                     for (Move move : gameBoard.getLegalMoves(td.tile.getOccupator().color))
@@ -178,19 +265,16 @@ public class BoardView extends View {
 
         TileDisplay selectedTile = tileDisplays[rank][file];
 
+
         if (currentlySelected != null && currentlySelected.getValidDestinations().contains(selectedTile)){
-            selectedTile.virtualOccupator = currentlySelected.tile.getOccupator().getSymbol();
-//            currentlySelected.tile.setOccupator(null);
             currentlySelected.deselect();
 
             invalidate();
-
             return new Move(currentlySelected.tile.getLocale(), selectedTile.tile.getLocale(), gameBoard);
         }
 
         if (currentlySelected == null || selectedTile.tile.available(player.color))
             return null;
-
 
         currentlySelected.deselect();
         selectedTile.select();
@@ -208,15 +292,17 @@ public class BoardView extends View {
     public void setLayout(JSONObject jsonGame) {
         // layout stored in a "layout" field as 64 characters - one for each tile starting at
         // a8 and going through each rank (horizontally) to h1
+        System.out.println("Setting layout...");
         try {
             String boardlayout = jsonGame.getString("layout");
             for (int i = 0; i < 64; ++i){
                 int y = i/8, x = i <=7 ? i : i - 8 * y;
                 if (boardlayout.charAt(i) != '.')
-                    gameBoard.getTile(x,7-y).setOccupator(Piece.synthesizePiece(boardlayout.charAt(i)));
-                else gameBoard.getTile(x,7-y).setOccupator(null);
+                    tileDisplays[x][7-y].tile.setOccupator(Piece.synthesizePiece(boardlayout.charAt(i)));
+                else tileDisplays[x][7-y].tile.setOccupator(null);
             }
-            initTiles();
+            postInvalidate();
+//            initTiles();
         } catch (Exception e){
             e.printStackTrace();
         }

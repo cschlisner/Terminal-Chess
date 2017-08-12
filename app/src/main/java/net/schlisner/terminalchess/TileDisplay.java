@@ -7,6 +7,7 @@ import android.graphics.DrawFilter;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Typeface;
+import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.text.TextPaint;
 
@@ -21,10 +22,12 @@ import uniChess.Game;
  */
 public class TileDisplay {
 
-    public String virtualOccupator;
+    public boolean animating=false;
+    public float cy = -1, cx = -1;
+
     public Board.Tile tile;
 
-    public boolean monochrome;
+    public boolean monochrome = true;
 
     public int tileColor = Color.WHITE;
 
@@ -88,21 +91,37 @@ public class TileDisplay {
         return validDestinations;
     }
 
-    public void draw(Canvas canvas, float dimensions, float x, float y){
-        tilePaint.setColor(tileColor);
-        piecePaint.setColor(pieceColor);
+    public void setCharAlpha(int a){
+        piecePaint.setAlpha(a);
+    }
 
-        piecePaint.setTextAlign(Paint.Align.LEFT);
+    /**
+     * Draw the information for this TileDisplay's linked tile.
+     * @param canvas canvas to draw on
+     * @param dimensions dimensions of this (square) tile
+     * @param x position of upper left x of tile in canvas
+     * @param y position of upper left y of tile in canvas
+     */
+    public void draw(Canvas canvas, float dimensions, float x, float y){
+//        canvas.drawText(String.format("%s%s",this.tile.getLocale().x,this.tile.getLocale().y), x+(0.16f*dimensions), y+dimensions-(0.2f*dimensions), piecePaint);
+        tilePaint.setColor(tileColor);
 //        piecePaint.setStyle(Paint.Style.FILL_AND_STROKE);
         tilePaint.setStyle(Paint.Style.STROKE);
         tilePaint.setStrokeWidth(3.0f);
+
         piecePaint.setTextSize(dimensions-(0.1f*dimensions));
+        piecePaint.setTextAlign(Paint.Align.LEFT);
+        piecePaint.setTypeface(FontManager.getTypeFace());
+
 
         float sw = tilePaint.getStrokeWidth()+11;
+        System.out.println("drawing piecetf="+piecePaint.getTypeface());
 
         // grid lines
-        if (!monochrome)
+        if (!monochrome) {
+            System.out.println("drawing grid color");
             canvas.drawRect(x, y, x+dimensions, y+dimensions, tilePaint);
+        }
 
         // selection lines if applicable
         if (!monochrome && selected) {
@@ -112,17 +131,20 @@ public class TileDisplay {
         }
 
         // tile color to create outlined effect
-        //if (!monochrome) {
+        if (!monochrome) {
+            System.out.println("drawing tile color");
             tilePaint.setColor(fillColor);
             tilePaint.setStyle(Paint.Style.FILL);
             canvas.drawRect(x + sw, y + sw, x + dimensions - sw, y + dimensions - sw, tilePaint);
-        //}
-//        canvas.drawText(String.format("%s%s",this.tile.getLocale().x,this.tile.getLocale().y), x+(0.16f*dimensions), y+dimensions-(0.2f*dimensions), piecePaint);
-        if (tile.getOccupator() != null) {
-            canvas.drawText(tile.getOccupator().getSymbol(), x+(0.16f*dimensions), y+dimensions-(0.2f*dimensions), piecePaint);
         }
-        if (virtualOccupator != null){
-            canvas.drawText(virtualOccupator, x+(0.16f*dimensions), y+dimensions-(0.2f*dimensions), piecePaint);
+
+        if (!animating){
+            cx = x+(0.06f*dimensions);
+            cy = y+dimensions-(0.2f*dimensions);
+        }
+
+        if (tile.getOccupator() != null) {
+            canvas.drawText(tile.getOccupator().getSymbol(), cx, cy, piecePaint);
         }
     }
 }

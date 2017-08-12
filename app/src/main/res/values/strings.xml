@@ -4,4 +4,6 @@
     <string name="waiting_for_player">▷</string>
     <string name="waiting_for_opponent">◷</string>
     <string name="title_activity_network_game_menu">NetworkGameMenu</string>
+    <string name="transition_boardview">BoardViewTransition</string>
+    <string name="transition_statusbar">StatusTransition</string>
 </resources>

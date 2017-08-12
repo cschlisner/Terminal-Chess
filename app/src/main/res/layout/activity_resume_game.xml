@@ -17,6 +17,7 @@
             android:layout_height="match_parent">
 
             <ListView
+                android:listSelector="@drawable/ripple"
                 android:id="@+id/gameListView"
                 android:layout_width="293dp"
                 android:layout_height="414dp"

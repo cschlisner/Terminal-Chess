@@ -6,6 +6,7 @@
 
     <TextView
         android:id="@+id/userTurn"
+        android:transitionName="@string/transition_statusbar"
         android:layout_width="40dp"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
@@ -33,7 +34,8 @@
         android:layout_alignParentEnd="true" />
 
     <net.schlisner.terminalchess.BoardView
-        android:id="@+id/icon"
+        android:transitionName="@string/transition_boardview"
+        android:id="@+id/boardviewer_listicon"
         android:layout_width="80dp"
         android:layout_height="80dp"
         android:layout_marginLeft="30dp"

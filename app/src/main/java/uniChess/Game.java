@@ -68,6 +68,7 @@ public class Game implements Serializable{
 			Move move;
 			try {
 				move = Move.parseMove(getCurrentBoard(), getCurrentPlayer().color, in);
+				lastMove = move;
 			} catch (Exception e){
 				return;
 			}

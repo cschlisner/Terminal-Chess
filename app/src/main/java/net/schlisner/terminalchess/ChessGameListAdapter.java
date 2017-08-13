@@ -59,7 +59,7 @@ class ChessGameListAdapter extends ArrayAdapter<JSONObject> {
         BoardView icon = (BoardView) rowView.findViewById(R.id.boardviewer_listicon);
         try {
             icon.setBoard(new Board(gamesJSON.get(position).optString("layout")));
-            icon.setFlipped(!gamesJSON.get(position).optBoolean("w"));
+            icon.setFlipped(!PostOffice.isWhite(gamesJSON.get(position).getString("white_md5uuid"), uuid));
         } catch (Exception e){
             e.printStackTrace();
         }

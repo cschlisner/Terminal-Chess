@@ -33,6 +33,7 @@ def create_game(player_one, player_two):
 conn = r.connect('localhost', 28015).repl()
 
 while (True):
+	# Create games from users in lobby
 	online = r.db("chess").table("users").filter({
 		"online":True 
 	}).run(conn)
@@ -40,8 +41,23 @@ while (True):
 		player_one = online.next()
 		player_two = online.next()	
 	except:
-		continue;
-	
+		# Delete games that have no users in them
+		emptyGames = r.db("chess").table("games").filter({
+			"white_md5uuid":"_",
+			"black_md5uuid":"_"
+		}).run(conn)
+		
+		try: 
+			emptygame = emptyGames.next()
+		except:
+			continue;
+
+		r.db("chess").table("games").get(emptygame.get("id")).delete().run(conn)
+
+
+		print("deleted game: " + emptygame.get("id"))
+		continue;		
+		
 	r.db("chess").table("users").get(player_one["id"]).update({
 		"online": False
 	}).run(conn)
@@ -49,3 +65,4 @@ while (True):
 		"online": False
 	}).run(conn)
 	print("created game: " + create_game(player_one["id"], player_two["id"])+ " : "+ player_one["id"]+","+player_two["id"]);
+

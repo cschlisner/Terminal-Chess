@@ -34,6 +34,7 @@ public class GameActivity extends AppCompatActivity {
 
     private Game chessGame;
     private JSONObject gameJSON;
+    private String initMove;
 
     Runnable recieveNetMove = new Runnable() {
         @Override
@@ -60,7 +61,9 @@ public class GameActivity extends AppCompatActivity {
                         public void run() {
                             try {
                                 gameAdvance(gameJSON.getJSONArray("moves").getString(gameJSON.getJSONArray("moves").length() - 1), true);
-                            } catch (Exception e){}
+                            } catch (Exception e){
+                                e.printStackTrace();
+                            }
                         }
                     });
                 }
@@ -73,7 +76,7 @@ public class GameActivity extends AppCompatActivity {
     View.OnTouchListener boardTL = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent e) {
-            if (!!userTurn() && v instanceof BoardView) {
+            if (chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE) == userIsWhite && v instanceof BoardView) {
                 BoardView bV = (BoardView) v;
                 float x = e.getX();
                 float y = e.getY();
@@ -153,30 +156,20 @@ public class GameActivity extends AppCompatActivity {
 
             try {
                 gameJSON = new JSONObject(gameJSONString);
+
+//                // set last move as initial move for animation
+//                initMove = gameJSON.getJSONArray("moves").getString(gameJSON.getJSONArray("moves").length()-1);
+//                gameJSON.getJSONArray("moves").remove(gameJSON.getJSONArray("moves").length()-1);
+
                 System.out.println("Starting Game: " + gameJSON.getString("id"));
                 gameUUIDView.setText(gameJSON.getString("id"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
             sharedPref = this.getSharedPreferences("Dank Memes(c)", Context.MODE_PRIVATE);
-            if (menuIntent.getBooleanExtra("startFromLobby", false)) {
+
+            if (menuIntent.getBooleanExtra("startFromLobby", false))
                 returnToMenu = true;
-                String games = sharedPref.getString("savedGames", null);
-                if (games != null) {
-                    try {
-                        JSONArray gameArr = new JSONArray(games);
-                        gameArr.put(gameJSON);
-                        SharedPreferences.Editor e = sharedPref.edit();
-                        e.putString("savedGames", gameArr.toString());
-                        e.apply();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-            SharedPreferences.Editor e = sharedPref.edit();
-            e.putString("lastActiveGame", gameJSONString);
-            e.apply();
 
             mHandlerThread.start();
             updateHandler = new Handler(mHandlerThread.getLooper());
@@ -253,12 +246,12 @@ public class GameActivity extends AppCompatActivity {
 
                             @Override
                             protected void onPostExecute(Void res) {
-                                boardView.setBoard(chessGame.getCurrentBoard());
+                                boardView.setBoard(chessGame.getBoardList().get(chessGame.getBoardList().size()-2));
+                                boardView.animateMove(chessGame.getLastMove(), chessGame.getCurrentBoard());
                                 deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
                                 deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
-                                boardView.updateValidMoves();
                                 if (!userTurn()) {
-                                    updateHandler.postDelayed(recieveNetMove, 1000);
+                                    updateHandler.postDelayed(recieveNetMove, (long)Math.E*1100);
                                 }
                             }
                         }.execute(gameJSON);
@@ -295,6 +288,7 @@ public class GameActivity extends AppCompatActivity {
         System.out.println("Input: "+in);
 
         final Game.GameEvent gameResponse = chessGame.advance(in);
+
         System.out.println("Game response: "+gameResponse);
 
         boardView.animateMove(chessGame.getLastMove(), chessGame.getCurrentBoard(), opponentType.equals(OPPONENT_LOCAL), new PostOffice.MailCallback(){

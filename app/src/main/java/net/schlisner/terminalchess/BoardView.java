@@ -45,20 +45,19 @@ public class BoardView extends View {
 
     Paint paint = new Paint();
 
-    private float tileDim;
+    private static float tileDim;
 
     public BoardView(Context context, AttributeSet attr){
         super(context, attr);
+
         setBoard(new Board());
     }
 
-    int boardUpdates = 0;
     public void setBoard(Board b) {
         setBoard(b,false);
     }
 
     public void setBoard(Board b, boolean updatemoves){
-        ++boardUpdates;
         this.gameBoard = b;
         initTiles();
 
@@ -70,11 +69,12 @@ public class BoardView extends View {
         invalidate();
     }
 
-    public void initTiles() {
+    private void initTiles() {
         initTiles(false);
     }
 
-    public void initTiles(boolean monochrome){
+    private void initTiles(boolean monochrome){
+//        System.out.format("init_tiles:"+getWidth()+"\n");
         for (int i = 0; i < 8; ++i){
             for (int j = 0; j < 8; ++j){
                 tileDisplays[i][j] = new TileDisplay(getContext(), gameBoard.getTile(i,7-j));
@@ -82,6 +82,7 @@ public class BoardView extends View {
             }
         }
         currentlySelected = tileDisplays[0][0];
+        forceLayout();
     }
 
     // tile display that is being animated should always be drawn last
@@ -101,8 +102,23 @@ public class BoardView extends View {
      * @param move move to animate
      */
     public void animateMove(final Move move, final Board board, final boolean flip, final PostOffice.MailCallback mcb){
+        BoardView.this.invalidate();
+
+        tileDim = (((float)getWidth()-4) / 8.0f);
+        for (int i = 0; i < 8; ++i){
+            for (int j = 0; j < 8; ++j){
+                int y = flipped ? 7-i : i;
+                int x = flipped ? 7-j : j;
+                tileDisplays[y][x].cx = (i*tileDim)+0.06f*tileDim;
+                tileDisplays[y][x].cy = (j*tileDim)+tileDim-(0.2f*tileDim);
+            }
+        }
+
         final TileDisplay origin = getTileDisplay(move.origin);
         final TileDisplay destination = getTileDisplay(move.destination);
+
+//        System.out.format("Animating: [%s] %s:(%s,%s) %s:(%s,%s)\n", move, origin.toString(), origin.cx, origin.cy, destination.toString(), destination.cx, destination.cy);
+
 
         final float distx = destination.cx-origin.cx;
         final float disty = destination.cy-origin.cy;
@@ -122,7 +138,7 @@ public class BoardView extends View {
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
                 float progress = valueAnimator.getAnimatedFraction();
 
-//                System.out.format("Animating: %s %s %s\n", progress, origin.cx, origin.cy);
+//                System.out.format("Animating: %s %s %s %s\n", move, progress, origin.cx, origin.cy);
                 origin.cy = oy + progress*disty;
                 origin.cx = ox + progress*distx;
                 destination.setCharAlpha((int)((1.0-progress)*255f));
@@ -178,13 +194,17 @@ public class BoardView extends View {
         int r=0, f=0;
         for (int i = 0; i < 8; ++i){
             for (int j = 0; j < 8; ++j) {
-                TileDisplay dr = tileDisplays[flipped ? 7-i : i ][ flipped ? 7-j : j];
+                int y = flipped ? 7-i : i;
+                int x = flipped ? 7-j : j;
+                TileDisplay dr = tileDisplays[y][x];
+//                System.out.format("Drawing Tile: %s\n", dr.toString());
                 if (dr.animating) {
                     r = i;
                     f = j;
                     animTile = dr;
                 }
                 else dr.draw(canvas, tileDim, (i*tileDim), 5+(j*tileDim));
+//                else dr.draw(canvas, )
             }
         }
         canvas.drawRect(0, canvas.getHeight()-2f, canvas.getWidth(), canvas.getHeight(), borderPaint);
@@ -194,7 +214,7 @@ public class BoardView extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-
+//        System.out.println("onmeasure");
         int widthMode = MeasureSpec.getMode(widthMeasureSpec);
         int widthSize = MeasureSpec.getSize(widthMeasureSpec);
         int heightMode = MeasureSpec.getMode(heightMeasureSpec);

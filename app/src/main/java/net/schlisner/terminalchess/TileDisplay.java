@@ -115,11 +115,11 @@ public class TileDisplay {
 
 
         float sw = tilePaint.getStrokeWidth()+11;
-        System.out.println("drawing piecetf="+piecePaint.getTypeface());
+//        System.out.println("drawing piecetf="+piecePaint.getTypeface());
 
         // grid lines
         if (!monochrome) {
-            System.out.println("drawing grid color");
+//            System.out.println("drawing grid color");
             canvas.drawRect(x, y, x+dimensions, y+dimensions, tilePaint);
         }
 
@@ -132,7 +132,7 @@ public class TileDisplay {
 
         // tile color to create outlined effect
         if (!monochrome) {
-            System.out.println("drawing tile color");
+//            System.out.println("drawing tile color");
             tilePaint.setColor(fillColor);
             tilePaint.setStyle(Paint.Style.FILL);
             canvas.drawRect(x + sw, y + sw, x + dimensions - sw, y + dimensions - sw, tilePaint);

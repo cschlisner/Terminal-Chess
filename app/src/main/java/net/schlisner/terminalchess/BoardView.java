@@ -86,11 +86,21 @@ public class BoardView extends View {
 
     // tile display that is being animated should always be drawn last
     TileDisplay animTile;
+
+    /**
+     * Animates move transition on board
+ * @param move move to animate
+ * @param board
+     */
+    public void animateMove(final Move move, final Board board) {
+        animateMove(move, board, false, null);
+    }
+
     /**
      * Animates move transition on board
      * @param move move to animate
      */
-    public void animateMove(final Move move, final Board board){
+    public void animateMove(final Move move, final Board board, final boolean flip, final PostOffice.MailCallback mcb){
         final TileDisplay origin = getTileDisplay(move.origin);
         final TileDisplay destination = getTileDisplay(move.destination);
 
@@ -105,20 +115,14 @@ public class BoardView extends View {
 
         final ValueAnimator animation = ValueAnimator.ofFloat(0, 1000);
 
-        animation.setDuration(2500);
+        animation.setDuration((long)Math.E * 1000);
 
         animation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
                 float progress = valueAnimator.getAnimatedFraction();
-                // move attacking piece to destination tile,
-                // if there is an attacked piece in the destination tile
-                // lower the alpha value of the piece by an amount proportional
-                // to the distance between the attacking piece and the destination tile.
 
-                // the attacking piece will move to the destination tile while the attacked piece
-                // fades from view and possibly changes color.
-                System.out.format("Animating: %s %s %s\n", progress, origin.cx, origin.cy);
+//                System.out.format("Animating: %s %s %s\n", progress, origin.cx, origin.cy);
                 origin.cy = oy + progress*disty;
                 origin.cx = ox + progress*distx;
                 destination.setCharAlpha((int)((1.0-progress)*255f));
@@ -127,6 +131,10 @@ public class BoardView extends View {
                 if (progress == 1.0){
                     origin.animating = false;
                     setBoard(board, true);
+                    if (flip)
+                        flipBoard();
+                    if (mcb != null)
+                        mcb.after("");
                 }
 
             }
@@ -155,8 +163,8 @@ public class BoardView extends View {
      * @return
      */
     private TileDisplay getTileDisplay(Location location){
-        System.out.println("selecting: "+location);
-        System.out.format("returning: [%s][%s]\n", location.x, 7-location.y);
+//        System.out.println("selecting: "+location);
+//        System.out.format("returning: [%s][%s]\n", location.x, 7-location.y);
         return tileDisplays[location.x][7-location.y];
     }
 
@@ -176,7 +184,7 @@ public class BoardView extends View {
                     f = j;
                     animTile = dr;
                 }
-                else dr.draw(canvas, tileDim, (i*tileDim), 10+(j*tileDim));
+                else dr.draw(canvas, tileDim, (i*tileDim), 5+(j*tileDim));
             }
         }
         canvas.drawRect(0, canvas.getHeight()-2f, canvas.getWidth(), canvas.getHeight(), borderPaint);
@@ -283,46 +291,4 @@ public class BoardView extends View {
         invalidate();
         return null;
     }
-
-    /**
-     * Set the piece positions of this board according to the layout defined in a JSONObject
-     * representation of a game
-     * @param jsonGame the game of which to set the layout to
-     */
-    public void setLayout(JSONObject jsonGame) {
-        // layout stored in a "layout" field as 64 characters - one for each tile starting at
-        // a8 and going through each rank (horizontally) to h1
-        System.out.println("Setting layout...");
-        try {
-            String boardlayout = jsonGame.getString("layout");
-            for (int i = 0; i < 64; ++i){
-                int y = i/8, x = i <=7 ? i : i - 8 * y;
-                if (boardlayout.charAt(i) != '.')
-                    tileDisplays[x][7-y].tile.setOccupator(Piece.synthesizePiece(boardlayout.charAt(i)));
-                else tileDisplays[x][7-y].tile.setOccupator(null);
-            }
-            postInvalidate();
-//            initTiles();
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Gets the piece positions of this board
-     * representation of a game
-     */
-    public String getLayout() {
-        // layout stored in a "layout" field as 64 characters - one for each tile starting at
-        // a8 and going through each rank (horizontally) to h1
-        String boardlayout = "";
-        for (int i = 0; i < 64; ++i){
-            int y = i/8, x = i <=7 ? i : i - 8 * y;
-            if (gameBoard.getTile(x,7-y).getOccupator() != null)
-                boardlayout += gameBoard.getTile(x,7-y).getOccupator().getSymbol(false);
-            else boardlayout += ".";
-        }
-        return boardlayout;
-    }
-
 }

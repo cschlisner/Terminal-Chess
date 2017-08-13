@@ -42,6 +42,43 @@ public class Board {
 		createMaterial(Game.Color.WHITE);
 	}
 
+	public Board(String layout) throws Exception{
+		if (layout.length() != 64)
+			throw new Exception("NO!!!!!!!!!!");
+
+		char[] allowed = {'.','p','b','k','n','r','q'};
+
+		for (int i = 0; i < 64; ++i) {
+
+			int y = i / 8, x = i <= 7 ? i : i - 8 * y;
+
+			boolean inset = false;
+			for (int a = 0; a < allowed.length; ++a){
+				if (Character.toLowerCase(layout.charAt(i)) == allowed[a]) {
+					inset = true;
+					break;
+				}
+			}
+			if (!inset)
+				throw new Exception("NO!!!!!!!!!!!!!!");
+
+			state[y][x] = new Tile(new Location(x, 7-y));
+			if (layout.charAt(i) != '.')
+				state[y][x].setOccupator(Piece.synthesizePiece(layout.charAt(i)));
+		}
+	}
+
+	public String getLayout(){
+		String boardlayout = "";
+		for (int i = 0; i < 64; ++i){
+			int y = i/8, x = i <=7 ? i : i - 8 * y;
+			if (getTile(x,7-y).getOccupator() != null)
+				boardlayout += getTile(x,7-y).getOccupator().getSymbol(false);
+			else boardlayout += ".";
+		}
+		return boardlayout;
+	}
+
 	private void createMaterial(Game.Color color){
    		int d = (color.equals(Game.Color.BLACK))?-1:1;
         Location org = (d>0)?new Location(0,0):new Location(7,7);

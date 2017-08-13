@@ -44,8 +44,6 @@ public class NetworkLobbyActivity extends AppCompatActivity {
         ProgressBar pb = (ProgressBar) findViewById(R.id.progressBar2);
         pb.getIndeterminateDrawable().setColorFilter(Color.parseColor("#00740c"), PorterDuff.Mode.MULTIPLY);
 
-        final TextView onlinePlayers = (TextView) findViewById(R.id.usersInLobbyText);
-
         try {
             gameCount = PostOffice.listGamesJSON(uuid).length();
 //            System.out.println("gamecount = "+gameCount);
@@ -72,7 +70,7 @@ public class NetworkLobbyActivity extends AppCompatActivity {
                     else {
 
                         Intent i = new Intent(getApplicationContext(), GameActivity.class)
-                                .putExtra("opponent", "network")
+                                .putExtra("opponent", GameActivity.OPPONENT_NETWORK)
                                 .putExtra("uuid", uuid)
                                 .putExtra("startFromLobby", true)
                                 .putExtra("gameJSON", gameJSON.toString());

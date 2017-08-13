@@ -11,6 +11,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.json.*;
 import java.security.MessageDigest;
+import java.util.concurrent.TimeoutException;
+
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.HttpEntity;
 import cz.msebera.android.httpclient.HttpResponse;
@@ -53,7 +55,7 @@ public class PostOffice {
      *
      * @return List of all games user is engaged in, by time created
      */
-    public static void checkIn(String uuid) {
+    static void checkIn(String uuid) {
         MailSend checkIn = new MailSend();
         checkIn.execute(Chives, "action", "checkin", "uuid", uuid);
     }
@@ -62,29 +64,58 @@ public class PostOffice {
      *
      * @return List of all games user is engaged in, by time created
      */
-    public static void checkOut(String uuid) {
+    static void checkOut(String uuid) {
         MailSend checkIn = new MailSend();
         checkIn.execute(Chives, "action", "checkout", "uuid", uuid);
     }
 
 
     /**
-     * Checks player into lobby, looks for new game including player, returns game id
+     * Attempts to join open game
      *
-     * @return game id of newly created game after checking player into lobby
+     * @return game id of game to join
+     *
      */
-    public static Game joinNewGame(String uuid) throws Exception{
-        int gameCount = listGames(uuid).size();
-        MailSend checkIn = new MailSend();
-        checkIn.execute(Chives, "action", "checkin");
-        long t1 = System.currentTimeMillis();
-        while ((System.currentTimeMillis() - t1) < NETWORK_TIMEOUT_SECS*1000){
-            List<Game> games = listGames(uuid);
-            if (games.size() > gameCount){
-                return games.get(games.size()-1);
-            }
+    static void joinGame(String uuid, String gameid, MailCallback mcb){
+        try {
+            new MailSend(mcb).execute(Chives, "action", "joingame", "game", gameid, "uuid", uuid)
+                        .get(NETWORK_TIMEOUT_SECS, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (TimeoutException e) {
+            e.printStackTrace();
         }
-        throw new Exception("Network timeout");
+    }
+
+    /**
+     * Attempts to join open game
+     *
+     * @return game id of game to join
+     *
+     */
+    static void createGame(String uuid, boolean isPublic, MailCallback mcb){
+        try {
+            System.out.println(String.valueOf(isPublic));
+            new MailSend(mcb).execute(Chives, "action", "creategame", "uuid", uuid, "public", String.valueOf(isPublic))
+                    .get(NETWORK_TIMEOUT_SECS, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (TimeoutException e) {
+            e.printStackTrace();
+        }
+    }
+
+    static JSONArray listPublicGames(String uuid) throws Exception{
+        return listPublicGames(uuid, null);
+    }
+    static JSONArray listPublicGames(String uuid, MailCallback mcb) throws Exception {
+        MailSend publicGames = mcb == null ? new MailSend() : new MailSend(mcb);
+        String response = publicGames.execute(Chives, "uuid", uuid, "action", "listpublic").get(NETWORK_TIMEOUT_SECS, TimeUnit.SECONDS);
+        return new JSONArray(response);
     }
 
     /**
@@ -211,6 +242,7 @@ public class PostOffice {
         try{
             MailSend leaveGame = new MailSend();
             leaveGame.execute(Chives, "action", "leavegame", "game", gameID, "uuid", uuid);
+            System.out.println("leaving game: "+gameID);
         } catch (Exception e){
             return;
         }
@@ -240,8 +272,6 @@ public class PostOffice {
         }
         return null;
     }
-
-
 
     public static abstract class MailCallback {
         protected Object[] arguments;

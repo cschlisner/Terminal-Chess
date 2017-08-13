@@ -1,5 +1,7 @@
 package net.schlisner.terminalchess;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -20,10 +22,15 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.util.Random;
+import java.util.concurrent.ThreadFactory;
 
 import uniChess.*;
 
 public class GameActivity extends AppCompatActivity {
+
+    public static final String OPPONENT_NETWORK = "network";
+    public static final String OPPONENT_LOCAL = "local";
+    public static final String OPPONENT_AI = "ai";
 
     private Game chessGame;
     private JSONObject gameJSON;
@@ -40,7 +47,6 @@ public class GameActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        statusBarOpponent.setText(!userTurn() ? getString(R.string.waiting_for_player) : getString(R.string.waiting_for_opponent));
                         statusBarUser.setText(!userTurn() ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
                     }
                 });
@@ -100,7 +106,6 @@ public class GameActivity extends AppCompatActivity {
     String gameJSONString;
     BoardView boardView;
     TextView deathRowOpponent;
-    TextView statusBarOpponent;
     TextView deathRowUser;
     TextView statusBarUser;
     ProgressBar pb;
@@ -123,44 +128,59 @@ public class GameActivity extends AppCompatActivity {
         boardView = (BoardView) findViewById(R.id.boardviewer);
 
         deathRowOpponent = (TextView) findViewById(R.id.deathRowOpponent);
-        statusBarOpponent = (TextView) findViewById(R.id.statusBarOpponent);
 
         deathRowUser = (TextView) findViewById(R.id.deathRowUser);
         statusBarUser = (TextView) findViewById(R.id.statusBarUser);
-
+        TextView gameUUIDView = (TextView) findViewById(R.id.inGameUUID);
+        gameUUIDView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                ClipboardManager clipboard = (ClipboardManager)
+                        getSystemService(Context.CLIPBOARD_SERVICE);
+                ClipData clip = ClipData.newPlainText("simple text", ((TextView)v).getText());
+                clipboard.setPrimaryClip(clip);
+                Toast.makeText(getApplicationContext(), "Game ID copied to clipboard", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+        });
         Intent menuIntent = getIntent();
 
         opponentType = menuIntent.getStringExtra("opponent");
         uuid = menuIntent.getStringExtra("uuid");
-        gameJSONString = menuIntent.getStringExtra("gameJSON");
 
-        try {
-            gameJSON = new JSONObject(gameJSONString);
-            System.out.println("Starting Game: "+ gameJSON.getString("id"));
-            //boardView.setLayout(gameJSON);
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-        sharedPref = this.getSharedPreferences("Dank Memes(c)", Context.MODE_PRIVATE);
-        if (menuIntent.getBooleanExtra("startFromLobby", false)) {
-            returnToMenu = true;
-            String games = sharedPref.getString("savedGames", null);
-            if (games != null){
-                try {
-                    JSONArray gameArr = new JSONArray(games);
-                    gameArr.put(gameJSON);
-                    SharedPreferences.Editor e = sharedPref.edit();
-                    e.putString("savedGames", gameArr.toString());
-                    e.apply();
-                }catch (Exception e){
-                    e.printStackTrace();
+        if (opponentType.equals(OPPONENT_NETWORK)) {
+            gameJSONString = menuIntent.getStringExtra("gameJSON");
+
+            try {
+                gameJSON = new JSONObject(gameJSONString);
+                System.out.println("Starting Game: " + gameJSON.getString("id"));
+                gameUUIDView.setText(gameJSON.getString("id"));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            sharedPref = this.getSharedPreferences("Dank Memes(c)", Context.MODE_PRIVATE);
+            if (menuIntent.getBooleanExtra("startFromLobby", false)) {
+                returnToMenu = true;
+                String games = sharedPref.getString("savedGames", null);
+                if (games != null) {
+                    try {
+                        JSONArray gameArr = new JSONArray(games);
+                        gameArr.put(gameJSON);
+                        SharedPreferences.Editor e = sharedPref.edit();
+                        e.putString("savedGames", gameArr.toString());
+                        e.apply();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             }
+            SharedPreferences.Editor e = sharedPref.edit();
+            e.putString("lastActiveGame", gameJSONString);
+            e.apply();
+
+            mHandlerThread.start();
+            updateHandler = new Handler(mHandlerThread.getLooper());
         }
-
-
-        mHandlerThread.start();
-        updateHandler = new Handler(mHandlerThread.getLooper());
     }
 
     @Override
@@ -174,7 +194,8 @@ public class GameActivity extends AppCompatActivity {
     @Override
     public void onPause(){
         super.onPause();
-        updateHandler.removeCallbacks(recieveNetMove);
+        if (updateHandler != null)
+            updateHandler.removeCallbacks(recieveNetMove);
         stop_updates = true;
         ChessUpdater.setAlarm(this);
     }
@@ -182,9 +203,12 @@ public class GameActivity extends AppCompatActivity {
     @Override
     public void onBackPressed(){
         super.onBackPressed();
-//        Intent i = new Intent(this, ResumeGameActivity.class);
-//        startActivity(i);
-//        finish();
+        if (returnToMenu){
+            Intent i = new Intent(this, ResumeGameActivity.class);
+            i.putExtra("uuid", uuid);
+            startActivity(i);
+            finish();
+        }
     }
 
     @Override
@@ -194,9 +218,8 @@ public class GameActivity extends AppCompatActivity {
         stop_updates = false;
 
         boardView.setOnTouchListener(boardTL);
-        System.out.format("In onresume(): %s %s", chessGame==null, opponentType);
-        
-        if (chessGame != null && opponentType.equals("network") && !userTurn())
+
+        if (chessGame != null && opponentType.equals(OPPONENT_NETWORK) && !userTurn())
             updateHandler.post(recieveNetMove);
 
         
@@ -205,20 +228,20 @@ public class GameActivity extends AppCompatActivity {
             Player<String> playerOne;
             Player<String> playerTwo;
             switch (opponentType) {
-                case "local":
+
+                case OPPONENT_LOCAL:
                     playerOne = new Player<>("WHITE", Game.Color.WHITE);
                     playerTwo = new Player<>("BLACK", Game.Color.BLACK);
                     chessGame = new Game(playerOne, playerTwo);
                     boardView.updateValidMoves();
                     break;
-                case "network":
+
+                case OPPONENT_NETWORK:
                     try {
                         userIsWhite = PostOffice.isWhite(gameJSON.getString("white_md5uuid"), uuid);
                         System.out.println("UserIsWhite: " + userIsWhite + " !userTurn(): " + !userTurn());
 
-                        statusBarOpponent.setText(!userTurn() ? getString(R.string.waiting_for_player) : getString(R.string.waiting_for_opponent));
                         statusBarUser.setText(!userTurn() ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
-
 
                         new AsyncTask<JSONObject, Void, Void>() {
                             @Override
@@ -237,14 +260,15 @@ public class GameActivity extends AppCompatActivity {
                                 if (!userTurn()) {
                                     updateHandler.postDelayed(recieveNetMove, 1000);
                                 }
-                                System.out.println("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIINNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNIIIIIIIIIIIIIIIIIIIIIIISSSSSSSSSSSSSSSSSHHHHHHHHHHHHHHHHHHHH");
                             }
                         }.execute(gameJSON);
                     } catch (Exception e) {
+                        e.printStackTrace();
                         Toast.makeText(getApplicationContext(), String.format("Could not initialize game. Your opponent is likely hacking."), Toast.LENGTH_SHORT).show();
                     }
                     break;
-                case "ai":
+
+                case OPPONENT_AI:
                     userIsWhite = (new Random(System.currentTimeMillis())).nextBoolean();
 
                     Toast.makeText(getApplicationContext(), String.format("You will be playing as %s", userIsWhite ? "white" : "black"), Toast.LENGTH_SHORT).show();
@@ -267,75 +291,100 @@ public class GameActivity extends AppCompatActivity {
         ChessUpdater.cancelAlarm(this);
     }
 
-    private void gameAdvance(String in, boolean netMove){
+    private void gameAdvance(final String in, final boolean netMove){
         System.out.println("Input: "+in);
 
-        Game.GameEvent gameResponse = chessGame.advance(in);
+        final Game.GameEvent gameResponse = chessGame.advance(in);
         System.out.println("Game response: "+gameResponse);
 
-        boardView.animateMove(chessGame.getLastMove(), chessGame.getCurrentBoard());
+        boardView.animateMove(chessGame.getLastMove(), chessGame.getCurrentBoard(), opponentType.equals(OPPONENT_LOCAL), new PostOffice.MailCallback(){
+            @Override
+            public void before() {}
+            @Override
+            public void after(String s) {
+                deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
+                deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
+                switch(gameResponse){
+                    case CHECK:
+                        Toast.makeText(getApplicationContext(), "Check!", Toast.LENGTH_SHORT).show();
+                    case OK:
 
-        deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
-        deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
-        switch(gameResponse){
-            case CHECK:
-                Toast.makeText(getApplicationContext(), "Check!", Toast.LENGTH_SHORT).show();
-            case OK:
+                        switch (opponentType){
 
-                switch (opponentType){
+                            case "local":
+                                deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(!userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
+                                deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(!userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
+                                userIsWhite = !userIsWhite;
+                                break;
 
-                    case "local":
-                        deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(!userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
-                        deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(!userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
-                        boardView.flipBoard();
-                        userIsWhite = !userIsWhite;
-                        break;
+                            case "network":
+                                saveMove(in);
+                                if (!netMove)
+                                    sendMove(in);
+                                break;
 
-                    case "network":
-                        saveMove(in);
-                        if (!netMove)
-                            sendMove(in);
-                        break;
-
-                    case "ai":
-                        // user just made move
-                        if (userIsWhite ^ chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE)){
-                            // get response move from ai
-                            gameAdvance(((Chesster)chessGame.getCurrentPlayer()).getMove().getANString(), false);
+                            case "ai":
+                                // user just made move
+                                if (userIsWhite ^ chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE)){
+                                    // get response move from ai
+                                    gameAdvance(((Chesster)chessGame.getCurrentPlayer()).getMove().getANString(), false);
+                                }
+                                break;
                         }
                         break;
+
+                    case CHECKMATE:
+                        Toast.makeText(getApplicationContext(), "Checkmate!", Toast.LENGTH_LONG).show();
+                        if (opponentType.equals(OPPONENT_NETWORK)) {
+                            if (!netMove)
+                                sendMove(in);
+                            saveGameAndExit(in);
+                        }
+                        else {
+                            Intent i = new Intent(getApplicationContext(), MenuActivity.class);
+                            startActivity(i);
+                            finish();
+                        }
+                        break;
+
+                    case STALEMATE:
+                        Toast.makeText(getApplicationContext(), "Stalemate! Game ends in draw!", Toast.LENGTH_LONG).show();
+                        if (opponentType.equals(OPPONENT_NETWORK)) {
+                            if (!netMove)
+                                sendMove(in);
+                            saveGameAndExit(in);
+                        }
+                        else {
+                            Intent i = new Intent(getApplicationContext(), MenuActivity.class);
+                            startActivity(i);
+                            finish();
+                        }
+                        break;
+
+                    case DRAW:
+                        Toast.makeText(getApplicationContext(), "Draw!", Toast.LENGTH_LONG).show();
+                        if (opponentType.equals(OPPONENT_NETWORK)) {
+                            if (!netMove)
+                                sendMove(in);
+                            saveGameAndExit(in);
+                        }
+                        else {
+                            Intent i = new Intent(getApplicationContext(), MenuActivity.class);
+                            startActivity(i);
+                            finish();
+                        }
+                        break;
+
+                    case INVALID:
+                        System.out.println(chessGame.getCurrentBoard());
+                        break;
+
+                    default:
+                        saveGameAndExit(in);
+                        break;
                 }
-                break;
-
-            case CHECKMATE:
-                Toast.makeText(getApplicationContext(), "Checkmate!", Toast.LENGTH_SHORT).show();
-                if (!netMove)
-                    sendMove(in);
-                saveGameAndExit(in);
-                break;
-
-            case STALEMATE:
-                Toast.makeText(getApplicationContext(), "Stalemate! Game ends in draw!", Toast.LENGTH_SHORT).show();
-                if (!netMove)
-                    sendMove(in);
-                saveGameAndExit(in);
-                break;
-
-            case DRAW:
-                Toast.makeText(getApplicationContext(), "Draw!", Toast.LENGTH_SHORT).show();
-                if (!netMove)
-                    sendMove(in);
-                saveGameAndExit(in);
-                break;
-
-            case INVALID:
-                System.out.println(chessGame.getCurrentBoard());
-                break;
-
-            default:
-                saveGameAndExit(in);
-                break;
-        }
+            }
+        });
     }
 
     private void saveGameAndExit(String in){
@@ -360,7 +409,7 @@ public class GameActivity extends AppCompatActivity {
 
     private void sendMove(final String move){
         System.out.println("Sending move");
-        PostOffice.sendMove(move, uuid, chessGame.ID, boardView.getLayout(), new PostOffice.MailCallback() {
+        PostOffice.sendMove(move, uuid, chessGame.ID, chessGame.getCurrentBoard().getLayout(), new PostOffice.MailCallback() {
             @Override
             public void before() {
             }
@@ -375,13 +424,14 @@ public class GameActivity extends AppCompatActivity {
         String games = sharedPref.getString("savedGames", null);
         if (games != null){
             try {
+                SharedPreferences.Editor e = sharedPref.edit();
                 JSONArray gameArr = new JSONArray(games);
                 for (int i = 0; i < gameArr.length(); ++i){
-
-                    if (gameArr.optJSONObject(i).getString("id").equals(gameJSON.getString("id")))
+                    if (gameArr.optJSONObject(i).getString("id").equals(gameJSON.getString("id"))) {
                         gameArr.optJSONObject(i).getJSONArray("moves").put(move);
+                        e.putString("lastActiveGame", gameArr.optJSONObject(i).toString());
+                    }
                 }
-                SharedPreferences.Editor e = sharedPref.edit();
                 e.putString("savedGames", gameArr.toString());
                 e.apply();
             }catch (Exception e){
@@ -390,12 +440,24 @@ public class GameActivity extends AppCompatActivity {
         }
     }
 
-    private boolean userTurn(){
+    private JSONObject getGameJSON(){
+        if (gameJSON != null)
+            return gameJSON;
+        if (sharedPref == null)
+            sharedPref = getSharedPreferences("Dank Memes(c)", MODE_PRIVATE);
+        String gameStr = sharedPref.getString("lastActiveGame", null);
         try {
-            return gameJSON.getBoolean("w") == userIsWhite;
-        } catch (JSONException jse){
-            jse.printStackTrace();
-            return new Random().nextBoolean();
+            gameJSON = new JSONObject(gameStr);
+            return gameJSON;
+        } catch (Exception e){
+            e.printStackTrace();
         }
+        return null;
+    }
+
+    private boolean userTurn(){
+        if (gameJSON != null)
+            return gameJSON.optBoolean("w") == userIsWhite;
+        return chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE) == userIsWhite;
     }
 }

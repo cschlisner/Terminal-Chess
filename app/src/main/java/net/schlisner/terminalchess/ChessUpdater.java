@@ -30,7 +30,7 @@ public class ChessUpdater extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction() != null && intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)){
-            this.setAlarm(context);
+            setAlarm(context);
             return;
         }
         try {
@@ -72,7 +72,7 @@ public class ChessUpdater extends BroadcastReceiver {
                     if (newMoves == 1) {
                         JSONArray mv = game.getJSONArray("moves");
                         String an = mv.getString(mv.length()-1);
-                        Piece p = Piece.synthesizePiece(an.charAt(0));
+                        Piece p = Piece.synthesizePiece(Character.toUpperCase(an.charAt(0)));
                         text = p.getSymbol()+" -> "+an.substring(3);
 
                         notificationIntent = new Intent(context, GameActivity.class);
@@ -95,7 +95,7 @@ public class ChessUpdater extends BroadcastReceiver {
                             .setContentTitle((newMoves > 1) ? "Opponents have advanced.":"Opponent has advanced.")
                             .setContentText(text)
                             .setLights(ContextCompat.getColor(context, R.color.chessBoardHighlight), 500, 1000)
-                            .setColor(ContextCompat.getColor(context, R.color.chessBoardHighlight))
+                            .setColor(ContextCompat.getColor(context, R.color.chessBoardDark))
                             .setSmallIcon(R.drawable.ic_stat_)
                             .setContentIntent(pIntent)
                             .setAutoCancel(true).build();

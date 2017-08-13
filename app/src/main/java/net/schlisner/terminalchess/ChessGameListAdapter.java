@@ -25,15 +25,14 @@ import uniChess.Game;
  */
 
 class ChessGameListAdapter extends ArrayAdapter<JSONObject> {
-    List<JSONObject> gamesJSON;
-    String uuid;
-    static Handler h;
+    private List<JSONObject> gamesJSON;
+    private String uuid;
+    private static Handler h;
 
     static {
         HandlerThread ht = new HandlerThread("icon layout thread");
         ht.start();
         h = new Handler(ht.getLooper());
-
     }
 
     public ChessGameListAdapter(Context c, List<JSONObject> glist, String uuid){
@@ -56,6 +55,14 @@ class ChessGameListAdapter extends ArrayAdapter<JSONObject> {
         final boolean isw = PostOffice.isWhite(game.optString("white_md5uuid"), uuid);
         userturn.setText((game.optBoolean("w") ^ isw) ? getContext().getString(R.string.waiting_for_opponent)
                 : getContext().getString(R.string.waiting_for_player));
+
+        BoardView icon = (BoardView) rowView.findViewById(R.id.boardviewer_listicon);
+        try {
+            icon.setBoard(new Board(gamesJSON.get(position).optString("layout")));
+            icon.setFlipped(!gamesJSON.get(position).optBoolean("w"));
+        } catch (Exception e){
+            e.printStackTrace();
+        }
 
         return rowView;
     }

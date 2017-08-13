@@ -12,21 +12,10 @@
         style="?android:attr/progressBarStyleInverse"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/header"
+        android:layout_centerInParent="true"
         android:layout_centerHorizontal="true"
         android:indeterminate="true"
         android:layout_marginTop="83dp" />
-
-    <TextView
-        android:id="@+id/usersInLobbyText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/progressBar2"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="51dp"
-        android:text="Online Players: "
-        android:textColor="@color/chessPiecesDark"
-        android:typeface="monospace" />
 
     <TextView
         android:id="@+id/header"
@@ -35,7 +24,8 @@
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="93dp"
-        android:text="Searching for game"
+        android:layout_above="@+id/progressBar2"
+        android:text="Waiting for match..."
         android:textColor="@color/chessPiecesDark"
         android:textSize="18sp"
         android:typeface="monospace" />

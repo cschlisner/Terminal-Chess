@@ -37,8 +37,8 @@ public class MenuActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         ActionBar actionBar = getSupportActionBar();
         actionBar.hide();
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_menu);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         sharedPref = this.getSharedPreferences("Dank Memes(c)", Context.MODE_PRIVATE);
         uuid = sharedPref.getString("uuid", "");
@@ -106,19 +106,19 @@ public class MenuActivity extends AppCompatActivity {
 
     // join game lobby to get matched, start checking for a new game in gamelist and enter it
     public void startNewNetworkGame(View view){
-        Intent i = new Intent(this, NetworkLobbyActivity.class).putExtra("uuid", uuid);
+        Intent i = new Intent(this, NetworkGameMenu.class);
         startActivity(i);
     }
 
     public void startNewLocalGame(View view){
         Intent intent = new Intent(this, GameActivity.class).putExtra("init_mode", "new")
-                                                            .putExtra("opponent", "local");
+                                                            .putExtra("opponent", GameActivity.OPPONENT_LOCAL);
         startActivity(intent);
     }
 
     public void startNewAIGame(View view){
         Intent intent = new Intent(this, GameActivity.class).putExtra("init_mode", "new")
-                                                            .putExtra("opponent", "ai");
+                                                            .putExtra("opponent", GameActivity.OPPONENT_AI);
         startActivity(intent);
     }
 

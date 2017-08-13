@@ -2,6 +2,7 @@ package net.schlisner.terminalchess;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -15,6 +16,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Layout;
@@ -60,14 +62,15 @@ public class ResumeGameActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         final ActionBar actionBar = getSupportActionBar();
         actionBar.hide();
+        setContentView(R.layout.activity_resume_game);
+
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         Intent menuIntent = getIntent();
         uuid = menuIntent.getStringExtra("uuid");
 
-        setContentView(R.layout.activity_resume_game);
 
         gameList = (ListView)findViewById(R.id.gameListView);
 
@@ -79,11 +82,43 @@ public class ResumeGameActivity extends AppCompatActivity {
                         .putExtra("uuid", uuid)
                         .putExtra("gameJSON", (gameList.getAdapter().getItem(position)).toString());
                 ActivityOptionsCompat opt = ActivityOptionsCompat.makeSceneTransitionAnimation(activity,
-                        android.support.v4.util.Pair.create(view.findViewById(R.id.boardviewer_listicon), getString(R.string.transition_boardview)));
+                        android.support.v4.util.Pair.create(view.findViewById(R.id.boardviewer_listicon), getString(R.string.transition_boardview)),
+                        android.support.v4.util.Pair.create(view.findViewById(R.id.gameIDTextView), getString(R.string.transition_statusbar)));
 //                getWindow().setAllowReturnTransitionOverlap(false);
 //                getWindow().setAllowEnterTransitionOverlap(false);
 //                startActivity(i);
                 ActivityCompat.startActivity(ResumeGameActivity.this, i, opt.toBundle());
+            }
+        });
+
+        gameList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, final View view, final int position, long id) {
+                AlertDialog.Builder adbuilder = new AlertDialog.Builder(ResumeGameActivity.this);
+                adbuilder.setTitle("Forfeit?")
+                        .setMessage("This will withdraw you from the game and count as a loss if the match is in progress.")
+                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                try {
+                                    // its only geme
+                                    JSONObject geme = (JSONObject)gameList.getAdapter().getItem(position);
+                                    PostOffice.leaveGame(uuid, geme.getString("id"));
+                                    cgla.remove(geme);
+                                    cgla.notifyDataSetChanged();
+                                } catch (Exception e){
+                                    Toast.makeText(getApplicationContext(), "Network took too long to respond", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        })
+                        .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                            }
+                        });
+                AlertDialog ad = adbuilder.create();
+                ad.show();
+                return true;
             }
         });
 
@@ -109,6 +144,12 @@ public class ResumeGameActivity extends AppCompatActivity {
 
         sharedPref = this.getSharedPreferences("Dank Memes(c)",Context.MODE_PRIVATE);
 
+        boolean showHelp = sharedPref.getBoolean("showHelp", true);
+        if (showHelp){
+            Toast.makeText(getApplicationContext(), "Long press game to forfeit", Toast.LENGTH_LONG).show();
+            sharedPref.edit().putBoolean("showHelp", false).apply();
+        }
+
         ht = new HandlerThread("networkupdate");
         ht.start();
         updateHandler = new Handler(ht.getLooper());
@@ -124,25 +165,6 @@ public class ResumeGameActivity extends AppCompatActivity {
         updateHandler.post(new Runnable() {
             @Override
             public void run() {
-//                if (savedGameList  != null){
-//                    System.out.println("Loading saved game data..."+savedGameList);
-//                    // games stored in json array
-//                    try {
-//                        savedGameArray = new JSONArray(savedGameList);
-//                        savedGameJSONList = new ArrayList<>();
-//                        for (int i = 0; i < savedGameArray.length(); ++i)
-//                            savedGameJSONList.add(savedGameArray.getJSONObject(i));
-//                        final ChessGameListAdapter cgla = new ChessGameListAdapter(getApplicationContext(), savedGameJSONList, uuid);
-//                        runOnUiThread(new Runnable() {
-//                            @Override
-//                            public void run() {
-//                                gameList.setAdapter(cgla);
-//                            }
-//                        });
-//                    } catch (Exception e){
-//                        e.printStackTrace();
-//                    }
-//                }
                 refreshList();
             }
         });

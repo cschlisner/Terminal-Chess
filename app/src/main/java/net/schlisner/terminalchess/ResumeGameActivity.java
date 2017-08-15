@@ -103,7 +103,15 @@ public class ResumeGameActivity extends AppCompatActivity {
                                 try {
                                     // its only geme
                                     JSONObject geme = (JSONObject)gameList.getAdapter().getItem(position);
-                                    PostOffice.leaveGame(uuid, geme.getString("id"));
+                                    if (geme.getString("white_md5uuid").equals("_") ||
+                                            geme.getString("black_md5uuid").equals("_")) {
+                                        PostOffice.leaveGame(uuid, geme.getString("id"));
+                                    } else {
+                                        PostOffice.forfeitGame(uuid, geme.getString("id"));
+                                        SharedPreferences.Editor e = sharedPref.edit();
+                                        e.putInt("score_l", sharedPref.getInt("score_l", 0)+1);
+                                        e.apply();
+                                    }
                                     cgla.remove(geme);
                                     cgla.notifyDataSetChanged();
                                 } catch (Exception e){

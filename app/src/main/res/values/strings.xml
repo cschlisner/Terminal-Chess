@@ -3,7 +3,10 @@
     <string name="title_activity_main">MainActivity</string>
     <string name="waiting_for_player">▷</string>
     <string name="waiting_for_opponent">◷</string>
+    <string name="offer_draw">⚐</string>
+    <string name="draw_offered">⚑</string>
     <string name="title_activity_network_game_menu">NetworkGameMenu</string>
     <string name="transition_boardview">BoardViewTransition</string>
     <string name="transition_statusbar">StatusTransition</string>
+    <string name="transition_boardIntoPB">BoardIntoProgressBar</string>
 </resources>

@@ -28,7 +28,6 @@ import uniChess.Player;
 
 public class MenuActivity extends AppCompatActivity {
     String uuid;
-    PostOffice po;
     SharedPreferences sharedPref;
     TextView uuidView;
 
@@ -43,9 +42,17 @@ public class MenuActivity extends AppCompatActivity {
         sharedPref = this.getSharedPreferences("Dank Memes(c)", Context.MODE_PRIVATE);
         uuid = sharedPref.getString("uuid", "");
         System.out.println(uuid);
+
         uuidView = (TextView) findViewById(R.id.uuidView);
         uuidView.setText(uuid);
-        po = new PostOffice();
+
+        TextView score_w = (TextView) findViewById(R.id.score_wins);
+        score_w.setText(String.valueOf(sharedPref.getInt("score_w", 0)));
+        TextView score_l = (TextView) findViewById(R.id.score_losses);
+        score_l.setText(String.valueOf(sharedPref.getInt("score_l", 0)));
+        TextView score_d = (TextView) findViewById(R.id.score_draws);
+        score_d.setText(String.valueOf(sharedPref.getInt("score_d", 0)));
+
         if (uuid.equals("")){
             System.out.println("Registering user...");
             try {
@@ -94,7 +101,6 @@ public class MenuActivity extends AppCompatActivity {
 
         // TODO: load user-set font ?
         FontManager.setFont(getApplicationContext(), "seguisym.ttf");
-        ChessUpdater.cancelAlarm(this);
 
     }
 
@@ -104,18 +110,20 @@ public class MenuActivity extends AppCompatActivity {
         startActivity(i);
     }
 
-    // join game lobby to get matched, start checking for a new game in gamelist and enter it
+    // go to networking menu
     public void startNewNetworkGame(View view){
         Intent i = new Intent(this, NetworkGameMenu.class);
         startActivity(i);
     }
 
+    // start local game
     public void startNewLocalGame(View view){
         Intent intent = new Intent(this, GameActivity.class).putExtra("init_mode", "new")
                                                             .putExtra("opponent", GameActivity.OPPONENT_LOCAL);
         startActivity(intent);
     }
 
+    // start local AI game
     public void startNewAIGame(View view){
         Intent intent = new Intent(this, GameActivity.class).putExtra("init_mode", "new")
                                                             .putExtra("opponent", GameActivity.OPPONENT_AI);
@@ -126,5 +134,11 @@ public class MenuActivity extends AppCompatActivity {
     public void onPause(){
         super.onPause();
         ChessUpdater.setAlarm(this);
+    }
+
+    @Override
+    public void onResume(){
+        super.onResume();
+        ChessUpdater.cancelAlarm(this);
     }
 }

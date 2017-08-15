@@ -83,4 +83,40 @@
         android:textSize="14sp"
         android:typeface="monospace" />
 
+    <TextView
+        android:id="@+id/score_wins"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="53dp"
+        android:text="6"
+        android:textAllCaps="true"
+        android:textColor="@color/chessBoardBorder"
+        android:textStyle="bold"
+        android:layout_below="@+id/uuidView"
+        android:layout_alignStart="@+id/button" />
+
+    <TextView
+        android:id="@+id/score_losses"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="6"
+        android:textAllCaps="true"
+        android:textColor="@color/chessBoardBorder"
+        android:textStyle="bold"
+        android:layout_alignBaseline="@+id/score_draws"
+        android:layout_alignBottom="@+id/score_draws"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:id="@+id/score_draws"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="6"
+        android:textAllCaps="true"
+        android:textColor="@color/chessBoardBorder"
+        android:textStyle="bold"
+        android:layout_alignBaseline="@+id/score_wins"
+        android:layout_alignBottom="@+id/score_wins"
+        android:layout_alignEnd="@+id/button" />
+
 </RelativeLayout>

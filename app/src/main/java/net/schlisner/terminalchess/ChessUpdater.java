@@ -20,6 +20,7 @@ import uniChess.Move;
 import uniChess.Piece;
 
 import static android.content.Context.NOTIFICATION_SERVICE;
+import static net.schlisner.terminalchess.GameActivity.OPPONENT_NETWORK;
 
 /**
  * Created by cschl_000 on 7/26/2017.
@@ -38,55 +39,73 @@ public class ChessUpdater extends BroadcastReceiver {
             String savedGameList = sharedPref.getString("savedGames", null);
             String uuid = sharedPref.getString("uuid", "");
 
-            System.out.println("Updating Games uuid="+uuid);
+            System.out.println("________\nUpdating Games for user: "+uuid);
+
+
             JSONArray savedGames = new JSONArray(savedGameList);
             JSONArray games = PostOffice.listGamesJSON(uuid);
+            boolean newGame = savedGames.length() < games.length();
 
-            boolean newGame = savedGames.length() != games.length();
+            System.out.format("Saved Games: %s\n", savedGames.length());
+            System.out.format("Network Games: %s\nNew: %s\n", games.length(), games.length() - savedGames.length());
 
             if (newGame){
-
-                System.out.println("nice meme: ");
+                System.out.println("New game: \n"+games.getJSONObject(games.length()-1).toString(4));
             }
             else {
                 int newMoves = 0;
+                boolean drawOffered = false, drawAccepted = false;
+                JSONObject drawnGame = null;
                 JSONObject game = null;
 
                 for (int i = 0; i < games.length(); ++i){
                     JSONObject netGame = games.getJSONObject(i);
                     JSONObject savedGame = savedGames.getJSONObject(i);
-                    System.out.format("network: %s\nsaved: %s\n", netGame, savedGame);
 
                     if (netGame.getJSONArray("moves").length() > savedGame.getJSONArray("moves").length()){
                         ++newMoves;
                         game = netGame;
+                        System.out.println("Modified game:\n"+game.toString(4));
+                    }
+                    boolean userIsWhite = PostOffice.isWhite(netGame.getString("white_md5uuid"), uuid);
+                    if (netGame.optBoolean((userIsWhite ? "black_draw" : "white_draw"), false)) {
+                        drawOffered = true;
+                        drawnGame = netGame;
+                        if (savedGame.optBoolean((!userIsWhite ? "black_draw" : "white_draw"), false))
+                            drawAccepted = true;
                     }
                 }
-                System.out.println("Modified game: "+game.toString());
 
-                if (newMoves > 0){
+                if (newMoves > 0 || drawOffered){
                     Intent notificationIntent;
                     String text;
 
                     // Starting wrong game??
-                    if (newMoves == 1) {
+                    if (newMoves == 0){
+                        text = (drawAccepted) ? "Draw Accepted." : "Draw Offered.";
+                        notificationIntent = new Intent(context, GameActivity.class);
+                        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        notificationIntent.putExtra("uuid", uuid);
+                        notificationIntent.putExtra("gameJSON", game.toString());
+                        notificationIntent.putExtra("opponent", OPPONENT_NETWORK);
+                    }
+                    else if (newMoves == 1 && !drawOffered) {
                         JSONArray mv = game.getJSONArray("moves");
-                        String an = mv.getString(mv.length()-1);
+                        String an = mv.getString(mv.length() - 1);
                         Piece p = Piece.synthesizePiece(Character.toUpperCase(an.charAt(0)));
-                        text = p.getSymbol()+" -> "+an.substring(3);
+                        text = p.getSymbol() + " -> " + an.substring(3);
 
                         notificationIntent = new Intent(context, GameActivity.class);
                         notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         notificationIntent.putExtra("uuid", uuid);
                         notificationIntent.putExtra("gameJSON", game.toString());
-                        notificationIntent.putExtra("opponent", "network");
+                        notificationIntent.putExtra("opponent", OPPONENT_NETWORK);
                     }
                     else {
                         text = "Attacks underway.";
                         notificationIntent = new Intent(context, ResumeGameActivity.class);
                         notificationIntent.putExtra("uuid", uuid);
                     }
-
 
                     PendingIntent pIntent = PendingIntent.getActivity(context, 667, notificationIntent,
                                                 PendingIntent.FLAG_CANCEL_CURRENT);
@@ -107,9 +126,10 @@ public class ChessUpdater extends BroadcastReceiver {
                     notificationManager.notify(665, n);
 
                 }
+
             }
         } catch (Exception e){
-            System.out.println("Welp. I tried.");
+            System.out.println("");
         }
     }
 

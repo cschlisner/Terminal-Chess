@@ -3,6 +3,7 @@ package net.schlisner.terminalchess;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
@@ -10,10 +11,13 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -33,8 +37,7 @@ public class GameActivity extends AppCompatActivity {
     public static final String OPPONENT_AI = "ai";
 
     private Game chessGame;
-    private JSONObject gameJSON;
-    private String initMove;
+    private static JSONObject gameJSON;
 
     Runnable recieveNetMove = new Runnable() {
         @Override
@@ -44,15 +47,43 @@ public class GameActivity extends AppCompatActivity {
                 gameJSON = PostOffice.refreshGameJSON(gameJSON.getString("id"));
                 if (gameJSON == null)
                     return;
+
+                if (gameJSON.get(userIsWhite ? "black_md5uuid"  : "white_md5uuid").equals("F")){
+
+                    AlertDialog.Builder adbuilder = new AlertDialog.Builder(GameActivity.this);
+                    adbuilder.setTitle("Opponent has forfeit game.")
+                            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    completeGameAndExit(WIN);
+                                }
+                            });
+                    AlertDialog ad = adbuilder.create();
+                    ad.show();
+                    return;
+                }
+                if (!opponentDraw && gameJSON.optBoolean((userIsWhite ? "black_draw" : "white_draw"), false)){
+                    opponentDraw = true;
+                    Toast.makeText(getApplicationContext(), "Opponent has offered draw.", Toast.LENGTH_SHORT).show();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            drawStatusOpponent.setVisibility(View.VISIBLE);
+                        }
+                    });
+                    return;
+                }
                 System.out.println(gameJSON.getJSONArray("moves"));
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         statusBarUser.setText(!userTurn() ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
+                        drawStatusUser.setVisibility(!userTurn() ? View.INVISIBLE : View.VISIBLE);
+
                     }
                 });
 
-                if (!userTurn())
+                if (gameJSON.getBoolean("w") != userIsWhite)
                     updateHandler.postDelayed(this, 1000);
                 else {
                     System.out.println("Running last input");
@@ -91,9 +122,68 @@ public class GameActivity extends AppCompatActivity {
                         }
                         break;
                 }
-                return true;
             }
             return true;
+        }
+    };
+
+    View.OnClickListener drawCL = new View.OnClickListener() {
+        @Override
+        public void onClick(final View v) {
+            if (!opponentDraw) {
+                AlertDialog.Builder adbuilder = new AlertDialog.Builder(GameActivity.this);
+                adbuilder.setTitle("Offer Draw?")
+                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                try {
+                                    PostOffice.offerDraw(uuid, gameJSON.getString("id"), new PostOffice.MailCallback(){
+                                        @Override
+                                        public void before() {
+                                        }
+                                        @Override
+                                        public void after(String s) {
+                                            System.out.println("RECIEVED: "+s);
+                                            ((TextView) v).setText(getText(R.string.draw_offered));
+                                            try {
+                                                gameJSON = new JSONObject(s);
+                                                saveGame();
+                                            } catch (Exception e){
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                    });
+                                } catch (Exception e) {
+                                    Toast.makeText(getApplicationContext(), "Network took too long to meme", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        })
+                        .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                            }
+                        });
+                AlertDialog ad = adbuilder.create();
+                ad.show();
+            }
+            else {
+                Toast.makeText(getApplicationContext(), "Draw accepted.", Toast.LENGTH_SHORT).show();
+                PostOffice.offerDraw(uuid, gameJSON.optString("id"), new PostOffice.MailCallback() {
+                    @Override
+                    public void before() {
+                    }
+
+                    @Override
+                    public void after(String s) {
+                        try {
+                            completeGameAndExit(DRAW);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            Toast.makeText(getApplicationContext(), "Oh Christ", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+            }
         }
     };
 
@@ -103,7 +193,7 @@ public class GameActivity extends AppCompatActivity {
 
     String uuid;
 
-    boolean userIsWhite=true, returnToMenu, netMove;
+    boolean userIsWhite=true, returnToMenu, opponentDraw;
     String opponentType = "";
 
     String gameJSONString;
@@ -111,13 +201,15 @@ public class GameActivity extends AppCompatActivity {
     TextView deathRowOpponent;
     TextView deathRowUser;
     TextView statusBarUser;
+    TextView drawStatusOpponent;
+    TextView drawStatusUser;
     ProgressBar pb;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Fullscreen everything
         super.onCreate(savedInstanceState);
-        System.out.println("In onCreate()");
+        System.out.println("GameActivity: In onCreate()");
         ActionBar actionBar = getSupportActionBar();
         if (actionBar!=null) actionBar.hide();
 
@@ -134,6 +226,16 @@ public class GameActivity extends AppCompatActivity {
 
         deathRowUser = (TextView) findViewById(R.id.deathRowUser);
         statusBarUser = (TextView) findViewById(R.id.statusBarUser);
+
+        drawStatusUser = (TextView) findViewById(R.id.drawStatusUser);
+        drawStatusUser.setTypeface(FontManager.getTypeFace());
+        drawStatusUser.setOnClickListener(drawCL);
+        drawStatusOpponent = (TextView) findViewById(R.id.drawStatusOpponent);
+        drawStatusUser.setTypeface(FontManager.getTypeFace());
+        drawStatusOpponent.setVisibility(View.INVISIBLE);
+
+
+
         TextView gameUUIDView = (TextView) findViewById(R.id.inGameUUID);
         gameUUIDView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
@@ -150,25 +252,24 @@ public class GameActivity extends AppCompatActivity {
 
         opponentType = menuIntent.getStringExtra("opponent");
         uuid = menuIntent.getStringExtra("uuid");
+        sharedPref = this.getSharedPreferences("Dank Memes(c)", Context.MODE_PRIVATE);
 
         if (opponentType.equals(OPPONENT_NETWORK)) {
             gameJSONString = menuIntent.getStringExtra("gameJSON");
 
             try {
                 gameJSON = new JSONObject(gameJSONString);
-
-//                // set last move as initial move for animation
-//                initMove = gameJSON.getJSONArray("moves").getString(gameJSON.getJSONArray("moves").length()-1);
-//                gameJSON.getJSONArray("moves").remove(gameJSON.getJSONArray("moves").length()-1);
-
-                System.out.println("Starting Game: " + gameJSON.getString("id"));
+                statusBarUser.setText(!userIsWhite^gameJSON.optBoolean("w") ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
+                drawStatusUser.setVisibility(!userIsWhite^gameJSON.optBoolean("w") ? View.INVISIBLE : View.VISIBLE);
+                System.out.println("Starting Game: " + gameJSON.toString(4));
                 gameUUIDView.setText(gameJSON.getString("id"));
+                System.out.println("Saving Game: " + gameJSON.getString("id"));
+                saveGame();
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            sharedPref = this.getSharedPreferences("Dank Memes(c)", Context.MODE_PRIVATE);
 
-            if (menuIntent.getBooleanExtra("startFromLobby", false))
+            if (menuIntent.getBooleanExtra("startFromExt", false))
                 returnToMenu = true;
 
             mHandlerThread.start();
@@ -200,18 +301,20 @@ public class GameActivity extends AppCompatActivity {
             Intent i = new Intent(this, ResumeGameActivity.class);
             i.putExtra("uuid", uuid);
             startActivity(i);
-            finish();
         }
     }
 
     @Override
     public void onResume(){
         super.onResume();
+        System.out.println("GameActivity: In onResume()");
+
 
         stop_updates = false;
 
         boardView.setOnTouchListener(boardTL);
-
+        deathRowOpponent.setTypeface(FontManager.getTypeFace());
+        deathRowUser.setTypeface(FontManager.getTypeFace());
         if (chessGame != null && opponentType.equals(OPPONENT_NETWORK) && !userTurn())
             updateHandler.post(recieveNetMove);
 
@@ -232,9 +335,8 @@ public class GameActivity extends AppCompatActivity {
                 case OPPONENT_NETWORK:
                     try {
                         userIsWhite = PostOffice.isWhite(gameJSON.getString("white_md5uuid"), uuid);
-                        System.out.println("UserIsWhite: " + userIsWhite + " !userTurn(): " + !userTurn());
+//                        System.out.println("UserIsWhite: " + userIsWhite + " !userTurn(): " + !userTurn());
 
-                        statusBarUser.setText(!userTurn() ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
 
                         new AsyncTask<JSONObject, Void, Void>() {
                             @Override
@@ -246,8 +348,25 @@ public class GameActivity extends AppCompatActivity {
 
                             @Override
                             protected void onPostExecute(Void res) {
-                                boardView.setBoard(chessGame.getBoardList().get(chessGame.getBoardList().size()-2));
-                                boardView.animateMove(chessGame.getLastMove(), chessGame.getCurrentBoard());
+                                if (chessGame.getBoardList().size() > 1) {
+                                    boardView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                        @Override
+                                        public void onGlobalLayout() {
+                                            boardView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                            boardView.setBoard(chessGame.getBoardList().get(chessGame.getBoardList().size() - 2));
+                                            boardView.animateMove(chessGame.getLastMove(), chessGame.getCurrentBoard());
+                                        }
+                                    });
+
+                                }
+                                else {
+                                    boardView.setBoard(chessGame.getCurrentBoard());
+                                    boardView.updateValidMoves();
+                                }
+                                statusBarUser.setText(!userTurn() ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
+                                drawStatusUser.setVisibility(!userTurn() ? View.INVISIBLE : View.VISIBLE);
+
                                 deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
                                 deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
                                 if (!userTurn()) {
@@ -298,6 +417,7 @@ public class GameActivity extends AppCompatActivity {
             public void after(String s) {
                 deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
                 deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
+                SharedPreferences.Editor e = sharedPref.edit();
                 switch(gameResponse){
                     case CHECK:
                         Toast.makeText(getApplicationContext(), "Check!", Toast.LENGTH_SHORT).show();
@@ -305,19 +425,25 @@ public class GameActivity extends AppCompatActivity {
 
                         switch (opponentType){
 
-                            case "local":
+                            case OPPONENT_LOCAL:
                                 deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(!userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
                                 deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(!userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
                                 userIsWhite = !userIsWhite;
                                 break;
 
-                            case "network":
+                            case OPPONENT_NETWORK:
+                                if (opponentDraw)
+                                    drawStatusOpponent.setVisibility(View.VISIBLE);
+
+                                statusBarUser.setText(!userTurn() ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
+                                drawStatusUser.setVisibility(!userTurn() ? View.INVISIBLE : View.VISIBLE);
+
                                 saveMove(in);
                                 if (!netMove)
                                     sendMove(in);
                                 break;
 
-                            case "ai":
+                            case OPPONENT_AI:
                                 // user just made move
                                 if (userIsWhite ^ chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE)){
                                     // get response move from ai
@@ -332,7 +458,7 @@ public class GameActivity extends AppCompatActivity {
                         if (opponentType.equals(OPPONENT_NETWORK)) {
                             if (!netMove)
                                 sendMove(in);
-                            saveGameAndExit(in);
+                            completeGameAndExit(userTurn() ? LOSS : WIN, in);
                         }
                         else {
                             Intent i = new Intent(getApplicationContext(), MenuActivity.class);
@@ -346,7 +472,7 @@ public class GameActivity extends AppCompatActivity {
                         if (opponentType.equals(OPPONENT_NETWORK)) {
                             if (!netMove)
                                 sendMove(in);
-                            saveGameAndExit(in);
+                            completeGameAndExit(DRAW, in);
                         }
                         else {
                             Intent i = new Intent(getApplicationContext(), MenuActivity.class);
@@ -360,7 +486,7 @@ public class GameActivity extends AppCompatActivity {
                         if (opponentType.equals(OPPONENT_NETWORK)) {
                             if (!netMove)
                                 sendMove(in);
-                            saveGameAndExit(in);
+                            completeGameAndExit(DRAW, in);
                         }
                         else {
                             Intent i = new Intent(getApplicationContext(), MenuActivity.class);
@@ -370,18 +496,51 @@ public class GameActivity extends AppCompatActivity {
                         break;
 
                     case INVALID:
+                        // todo: file bug report from UI
+                        Toast.makeText(getApplicationContext(), "Something is very wrong...", Toast.LENGTH_LONG).show();
                         System.out.println(chessGame.getCurrentBoard());
-                        break;
-
-                    default:
-                        saveGameAndExit(in);
                         break;
                 }
             }
         });
     }
 
-    private void saveGameAndExit(String in){
+    private void completeGameAndExit(int score){
+        String completedGames = sharedPref.getString("completedGames", null);
+        JSONArray completedGameArray = null;
+        try {
+            completedGameArray = completedGames != null ? new JSONArray(completedGames) : new JSONArray();
+            completedGameArray.put(gameJSON);
+            PostOffice.leaveGame(uuid, gameJSON.getString("id"));
+        }catch (Exception e){e.printStackTrace();}
+        SharedPreferences.Editor e =  sharedPref.edit();
+
+        String sc = "";
+        switch (score){
+            case WIN:
+                sc = "score_w";
+                break;
+            case LOSS:
+                sc = "score_l";
+                break;
+            case DRAW:
+                sc = "score_d";
+                break;
+        }
+        e.putInt(sc, sharedPref.getInt(sc, 0)+1);
+
+        e.putString("completedGames", completedGameArray.toString());
+        e.apply();
+        Intent i = new Intent(getApplicationContext(), MenuActivity.class);
+        startActivity(i);
+        finish();
+    }
+
+    private static final int WIN = 1;
+    private static final int LOSS = -1;
+    private static final int DRAW = 0;
+
+    private void completeGameAndExit(int score, String in){
         // Save game
         String completedGames = sharedPref.getString("completedGames", null);
         JSONArray completedGameArray = null;
@@ -395,10 +554,20 @@ public class GameActivity extends AppCompatActivity {
         e.putString("completedGames", completedGameArray.toString());
         e.apply();
 
+        String sc = "";
+        switch (score){
+            case WIN:
+                sc = "score_w";
+                break;
+            case LOSS:
+                sc = "score_l";
+                break;
+            case DRAW:
+                sc = "score_d";
+                break;
+        }
+        e.putInt(sc, sharedPref.getInt(sc, 0)+1);
 
-        Intent i = new Intent(getApplicationContext(), MenuActivity.class);
-        startActivity(i);
-        finish();
     }
 
     private void sendMove(final String move){
@@ -423,9 +592,26 @@ public class GameActivity extends AppCompatActivity {
                 for (int i = 0; i < gameArr.length(); ++i){
                     if (gameArr.optJSONObject(i).getString("id").equals(gameJSON.getString("id"))) {
                         gameArr.optJSONObject(i).getJSONArray("moves").put(move);
-                        e.putString("lastActiveGame", gameArr.optJSONObject(i).toString());
                     }
                 }
+                e.putString("savedGames", gameArr.toString());
+                e.apply();
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void saveGame(){
+        String games = sharedPref.getString("savedGames", null);
+        if (games != null){
+            try {
+                SharedPreferences.Editor e = sharedPref.edit();
+                JSONArray gameArr = new JSONArray(games);
+                for (int i = 0; i < gameArr.length(); ++i)
+                    if (gameArr.optJSONObject(i).getString("id").equals(gameJSON.getString("id")))
+                        gameArr.remove(i);
+                gameArr.put(gameJSON);
                 e.putString("savedGames", gameArr.toString());
                 e.apply();
             }catch (Exception e){
@@ -450,8 +636,6 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private boolean userTurn(){
-        if (gameJSON != null)
-            return gameJSON.optBoolean("w") == userIsWhite;
         return chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE) == userIsWhite;
     }
 }

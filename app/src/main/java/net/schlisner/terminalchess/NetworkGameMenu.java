@@ -178,7 +178,7 @@ public class NetworkGameMenu extends AppCompatActivity {
             i.putExtra("uuid", uuid);
             i.putExtra("opponent", GameActivity.OPPONENT_NETWORK);
             i.putExtra("gameJSON", createdGame.toString());
-            i.putExtra("startFromLobby", true);
+            i.putExtra("startFromExt", true);
             startActivity(i);
             finish();
         }
@@ -208,7 +208,7 @@ public class NetworkGameMenu extends AppCompatActivity {
                             i.putExtra("uuid", uuid);
                             i.putExtra("opponent", GameActivity.OPPONENT_NETWORK);
                             i.putExtra("gameJSON", s);
-                            i.putExtra("startFromLobby", true);
+                            i.putExtra("startFromExt", true);
                             startActivity(i);
                             context.finish();
                         }

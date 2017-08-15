@@ -248,6 +248,26 @@ public class PostOffice {
         }
     }
 
+    public static void forfeitGame(String uuid, String gameID) {
+        try{
+            MailSend leaveGame = new MailSend();
+            leaveGame.execute(Chives, "action", "forfeit", "game", gameID, "uuid", uuid);
+            System.out.println("forfeiting game: "+gameID);
+        } catch (Exception e){
+            return;
+        }
+    }
+
+    public static void offerDraw(String uuid, String gameID, MailCallback mailCallback) {
+        try{
+            MailSend leaveGame = mailCallback == null ? new MailSend() : new MailSend(mailCallback);
+            leaveGame.execute(Chives, "action", "draw", "game", gameID, "uuid", uuid);
+            System.out.println("offering draw: "+gameID);
+        } catch (Exception e){
+            return;
+        }
+    }
+
     /**
      * Determines which player a user is in a game given the hashes of the player uuids and the users
      * uuid

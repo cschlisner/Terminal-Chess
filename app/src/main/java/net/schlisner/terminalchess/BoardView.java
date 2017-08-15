@@ -18,6 +18,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -45,12 +46,20 @@ public class BoardView extends View {
 
     Paint paint = new Paint();
 
-    private static float tileDim;
+    private float tileDim = -1;
 
     public BoardView(Context context, AttributeSet attr){
         super(context, attr);
 
         setBoard(new Board());
+
+        getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+//                getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                tileDim = (((float)getWidth()-4) / 8.0f);
+            }
+        });
     }
 
     public void setBoard(Board b) {
@@ -82,7 +91,7 @@ public class BoardView extends View {
             }
         }
         currentlySelected = tileDisplays[0][0];
-        forceLayout();
+//        forceLayout();
     }
 
     // tile display that is being animated should always be drawn last
@@ -104,7 +113,6 @@ public class BoardView extends View {
     public void animateMove(final Move move, final Board board, final boolean flip, final PostOffice.MailCallback mcb){
         BoardView.this.invalidate();
 
-        tileDim = (((float)getWidth()-4) / 8.0f);
         for (int i = 0; i < 8; ++i){
             for (int j = 0; j < 8; ++j){
                 int y = flipped ? 7-i : i;
@@ -117,7 +125,7 @@ public class BoardView extends View {
         final TileDisplay origin = getTileDisplay(move.origin);
         final TileDisplay destination = getTileDisplay(move.destination);
 
-//        System.out.format("Animating: [%s] %s:(%s,%s) %s:(%s,%s)\n", move, origin.toString(), origin.cx, origin.cy, destination.toString(), destination.cx, destination.cy);
+        System.out.format("Animating: [%s] %s:(%s,%s) %s:(%s,%s) %s\n", move, origin.toString(), origin.cx, origin.cy, destination.toString(), destination.cx, destination.cy, tileDim);
 
 
         final float distx = destination.cx-origin.cx;
@@ -209,7 +217,7 @@ public class BoardView extends View {
         }
         canvas.drawRect(0, canvas.getHeight()-2f, canvas.getWidth(), canvas.getHeight(), borderPaint);
         if (animTile != null)
-            animTile.draw(canvas, tileDim, (r*tileDim), 10+(f*tileDim));
+            animTile.draw(canvas, tileDim, (r*tileDim), 5+(f*tileDim));
     }
 
     @Override

@@ -12,6 +12,10 @@ import java.util.ArrayList;
 *	These lists will be publicly acessable and unchanging so that no additional calculation will need to be done for the board. 
 */
 public class Board {
+
+	private int blackMaterial=0;
+	private int whiteMaterial=0;
+
 	private Tile[][] state = new Tile[8][8];
 
 	private List<Move> legalWhiteMoves;
@@ -27,16 +31,32 @@ public class Board {
 	public static boolean reversed;
 
 	public Board(Board other){
-		for (int y = 0; y < 8; ++y)
-			for (int x = 0; x < 8; ++x)
-				state[y][x] = new Tile(other.getTile(x, 7-y));
+		for (int y = 0; y < 8; ++y) {
+			for (int x = 0; x < 8; ++x) {
+				state[y][x] = new Tile(other.getTile(x, 7 - y));
+				Piece p = state[y][x].getOccupator();
+				if (p != null){
+					if (p.color.equals(Game.Color.WHITE))
+						whiteMaterial += p.value;
+					else blackMaterial += p.value;
+				}
+			}
+		}
 		this.deathRow.addAll(other.deathRow);
 	}
 
 	public Board(){
-		for (int y = 0; y < 8; ++y)
-			for (int x = 0; x < 8; ++x)
-				state[y][x] = new Tile(new Location(x, 7-y));
+		for (int y = 0; y < 8; ++y) {
+			for (int x = 0; x < 8; ++x) {
+				state[y][x] = new Tile(new Location(x, 7 - y));
+				Piece p = state[y][x].getOccupator();
+				if (p != null) {
+					if (p.color.equals(Game.Color.WHITE))
+						whiteMaterial += p.value;
+					else blackMaterial += p.value;
+				}
+			}
+		}
 
 		createMaterial(Game.Color.BLACK);
 		createMaterial(Game.Color.WHITE);
@@ -99,6 +119,11 @@ public class Board {
         for (int i = 0; i < 8; ++i)
            getTile(i, ((d>0)?org.y+1:org.y-1)).setOccupator(new Piece(color, Game.PieceType.PAWN));
     }
+
+
+    public int getMaterialCount(Game.Color color){
+		return (color == Game.Color.BLACK) ? blackMaterial : whiteMaterial;
+	}
 
     protected List<Tile> tileList = new ArrayList<>();
     /**
@@ -649,7 +674,7 @@ public class Board {
 		*/
 		@Override
 		public String toString(){
-			return " "+(((occupator!=null)?occupator.getSymbol():(color.equals(Game.Color.BLACK))?"\u00B7":" "))+" ";
+			return " "+(((occupator!=null)?occupator.getSymbol():(color.equals(Game.Color.BLACK))? (Game.unicode?"\u00B7":"-"):" "))+" ";
 		}
 	}
 }

@@ -8,7 +8,7 @@ import java.util.ArrayList;
 *	An object for creating, maintaining, and communicating with a chess game.
 *
 */
-public class Game implements Serializable{
+public class Game implements Serializable {
 
 	/** Type that the Game object will return on game advancement */
 	public enum GameEvent {OK, AMBIGUOUS, INVALID, ILLEGAL, CHECK, CHECKMATE, STALEMATE, DRAW}
@@ -55,11 +55,8 @@ public class Game implements Serializable{
 	public Game(Player player1, Player player2, String gameString){
 		white = (player1.color.equals(Color.WHITE) ? player1 : player2);
 		black = (player1.color.equals(Color.WHITE) ? player2 : player1);
-
-		if (white instanceof Chesster)
-			((Chesster)white).registerGame(this);
-		if (black instanceof Chesster)
-			((Chesster)black).registerGame(this);
+		white.registerGame(this);
+		black.registerGame(this);
 
 		boards.add(new Board());
 
@@ -89,12 +86,9 @@ public class Game implements Serializable{
 	*/
 	public Game(Player player1, Player player2){
 		white = (player1.color.equals(Color.WHITE) ? player1 : player2);
-		black = (player1.color.equals(Color.WHITE) ? player2 : player1); 
-		
-		if (white instanceof Chesster)
-			((Chesster)white).registerGame(this);
-		if (black instanceof Chesster)
-			((Chesster)black).registerGame(this);
+		black = (player1.color.equals(Color.WHITE) ? player2 : player1);
+		white.registerGame(this);
+		black.registerGame(this);
 
 		boards.add(new Board());
 		getCurrentBoard().processLegal();

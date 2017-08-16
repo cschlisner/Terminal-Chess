@@ -10,7 +10,7 @@ import java.lang.reflect.Type;
  */
 
 class FontManager {
-    static Typeface tf;
+    static Typeface tf = null;
 
     static void setFont(Context context, String fontname){
         tf = Typeface.createFromAsset(context.getAssets(), "fonts/"+fontname);

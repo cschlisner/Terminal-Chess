@@ -2,6 +2,7 @@ package uniChess;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 /**
 *   An object representing a Player in a chess game. Each Player has a color and an Identifier of type T. 
@@ -9,7 +10,7 @@ import java.util.ArrayList;
 */
 public class Player <T> {
     private T IDENTIFIER;
-
+    private Game game;
     /** A general boolean switch for drawing.*/
     public boolean draw;
 
@@ -19,6 +20,15 @@ public class Player <T> {
     public Player(T id, Game.Color c){
     	this.IDENTIFIER = id;
     	this.color = c;
+    }
+
+    public void registerGame(Game game){
+        this.game = game;
+    }
+
+    public String getMove(){
+        Scanner in = new Scanner(System.in);
+        return in.nextLine();
     }
 
     /**

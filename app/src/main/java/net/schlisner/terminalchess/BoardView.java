@@ -278,7 +278,9 @@ public class BoardView extends View {
         }
     }
 
-    private TileDisplay currentlySelected;
+    public TileDisplay currentlySelected;
+    public TileDisplay selectedTile;
+
     /**
      * Selects a tile display and all valid moves originating from the linked tile.
      * Will return the tile that has been selected if the tile has a piece which has
@@ -299,7 +301,7 @@ public class BoardView extends View {
         rank = flipped ? 7-rank : rank;
         file = flipped ? 7-file : file;
 
-        TileDisplay selectedTile = tileDisplays[rank][file];
+        selectedTile = tileDisplays[rank][file];
 
 
         if (currentlySelected != null && currentlySelected.getValidDestinations().contains(selectedTile)){

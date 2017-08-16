@@ -384,18 +384,16 @@ public class GameActivity extends AppCompatActivity {
                     userIsWhite = (new Random(System.currentTimeMillis())).nextBoolean();
 
                     Toast.makeText(getApplicationContext(), String.format("You will be playing as %s", userIsWhite ? "white" : "black"), Toast.LENGTH_SHORT).show();
-                    playerTwo = userIsWhite ? new Chesster<>("BLACK", Game.Color.BLACK)
+                    playerTwo = userIsWhite ? new C3P0<>("BLACK", Game.Color.BLACK)
                             : new Player<>("BLACK", Game.Color.BLACK);
                     playerOne = userIsWhite ? new Player<>("WHITE", Game.Color.WHITE)
-                            : new Chesster<>("WHITE", Game.Color.WHITE);
+                            : new C3P0<>("WHITE", Game.Color.WHITE);
                     chessGame = new Game(playerOne, playerTwo);
+                    boardView.updateValidMoves();
 
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            boardView.updateValidMoves();
-                        }
-                    });
+                    if (!userIsWhite)
+                        gameAdvance(((C3P0)playerOne).getMove(), false);
+
                     break;
             }
         }
@@ -447,7 +445,7 @@ public class GameActivity extends AppCompatActivity {
                                 // user just made move
                                 if (userIsWhite ^ chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE)){
                                     // get response move from ai
-                                    gameAdvance(((Chesster)chessGame.getCurrentPlayer()).getMove().getANString(), false);
+                                    gameAdvance(((C3P0)chessGame.getCurrentPlayer()).getMove(), false);
                                 }
                                 break;
                         }

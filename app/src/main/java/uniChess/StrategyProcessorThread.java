@@ -41,12 +41,13 @@ public class StrategyProcessorThread extends Thread {
 
         getMoveTreeVal(sm, AI_DEPTH, 0, sm.unWeightedTreeAverages);
         
-        sm.strategicValue = sm.calculateStrategicValue();                
+        sm.strategicValue = sm.calculateStrategicValue();
         runTime = System.currentTimeMillis() - runTime;
     }
 
     double[] bestMove;
-    double[] worstMove; 
+    double[] worstMove;
+
     /**
     *   Returns all legal submoves of a move up to depth of max; populates given array with weighted average tactical val for each node depth.
     *   Weight applied is (1 / nodedepth) to account for loss in prediction accuracy over time. 

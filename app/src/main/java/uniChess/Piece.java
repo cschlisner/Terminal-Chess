@@ -104,7 +104,7 @@ public class Piece {
 				
 				break;
 			case KING:	
-				this.value = 200.0;
+				this.value = 15.0;
 				this.symbol = "K";
 				this.unicodeSymbol = new String(Character.toChars(unicodeChars[5]));
 				

@@ -48,7 +48,7 @@ public class Chesster <T> extends Player <T> {
     *
     *   @return the best move
     */
-    public Move getMove(){
+    public String getMove(){
         SmartMove.MATERIAL_WEIGHT = this.MATERIAL_WEIGHT;
         if (Board.playerHasCheck(game.getCurrentBoard(), game.getDormantPlayer()))
             STRATEGY = StrategyType.LOG;
@@ -75,10 +75,12 @@ public class Chesster <T> extends Player <T> {
 
         for (int i = 0; i < smartMoves.size(); ++i){
             threadPool.get(i).start();
-            printProgress(i, smartMoves.size(), threadPool.get(i).sm.toString());
+            // printProgress(i, smartMoves.size(), threadPool.get(i).sm.toString());
             try{
                 threadPool.get(i).join();
-            } catch (Exception e) {}
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         Collections.sort(smartMoves);
@@ -105,7 +107,7 @@ public class Chesster <T> extends Player <T> {
 
         sout.println(((SmartMove)best).getDataSring());
 
-        return best;
+        return best.getANString();
     }
 
 

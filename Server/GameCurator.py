@@ -27,6 +27,9 @@ def create_game(player_one, player_two):
 		"white_md5uuid" : hex_digest(player_one) if w else hex_digest(player_two),
 		"black_md5uuid" : hex_digest(player_two) if w else hex_digest(player_one),
 		"w": True,
+		"public":False,
+		"white_draw":False,
+		"black_draw":False,
 		"moves": []
 	}).run(conn)["generated_keys"][0]
 	
@@ -42,10 +45,12 @@ while (True):
 		player_two = online.next()	
 	except:
 		# Delete games that have no users in them
-		emptyGames = r.db("chess").table("games").filter({
-			"white_md5uuid":"_",
-			"black_md5uuid":"_"
-		}).run(conn)
+		emptyGames = r.db("chess").table("games").filter(
+			lambda game:
+			((game["white_md5uuid"]=="_") | (game["white_md5uuid"]=="F")) 
+			& ((game["black_md5uuid"]=="_") | (game["black_md5uuid"]=="F"))
+		).run(conn)
+		
 		
 		try: 
 			emptygame = emptyGames.next()

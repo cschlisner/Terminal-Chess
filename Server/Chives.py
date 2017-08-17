@@ -38,6 +38,8 @@ def create_game(player_one, public):
 		"white_md5uuid" : hex_digest(player_one) if w else "_",
 		"black_md5uuid" : "_" if w else hex_digest(player_one),
 		"w": True,
+		"white_draw": False,
+		"black_draw": False,
 		"public": public,
 		"moves": []
 	}).run(conn)["generated_keys"][0]
@@ -55,7 +57,8 @@ def join_game(player_two, game):
 		return
 	r.db("chess").table("games").get(game).update({
 		"white_md5uuid" : hex_digest(player_two) if w else r.row['white_md5uuid'],
-		"black_md5uuid" : r.row['black_md5uuid'] if w else hex_digest(player_two)
+		"black_md5uuid" : r.row['black_md5uuid'] if w else hex_digest(player_two), 
+		"public" : False
 	}).run(conn)
 
 def list_public(player):
@@ -97,25 +100,22 @@ elif action == 'checkout':
 	checkout(player)
 
 # removes player from game. after both players are removed game will be deleted from database by GameCurator.py
-elif action == 'leavegame':
+elif (action == 'leavegame') | (action=='forfeit'):
 	player = form["uuid"].value
-	print (player)
 	hash = hex_digest(player)
-	print (hash)
 	game_uuid = form["game"].value
-	print(game_uuid)
 	game = r.db("chess").table("games").get(game_uuid).run(conn)
 	isw = game["white_md5uuid"] == hash
-	print (isw)
+	status = "F" if action == 'forfeit' else "_"
 	if isw:
 		r.db("chess").table("games").get(game_uuid).update({
-			"white_md5uuid":"_"
+			"white_md5uuid": status
 		}).run(conn)
 	else :
 		r.db("chess").table("games").get(game_uuid).update({
-			"black_md5uuid":"_"
+			"black_md5uuid": status
 		}).run(conn)
-
+ 
 # gets game object associated with specified uuid
 elif action == 'getgame':
 	game_uuid = form["game"].value
@@ -144,3 +144,28 @@ elif action == 'joingame':
 elif action == 'listpublic':
 	player = form['uuid'].value
 	print(convert_to_json_because_rethinkdb_sucks(str(list_public(player))))
+
+elif action == 'draw':
+	player = form['uuid'].value
+	game_id = form['game'].value
+	hash = hex_digest(player)
+	game = r.db("chess").table("games").get(game_id).run(conn)
+	w = game["white_md5uuid"] == hash 
+	r.db("chess").table("games").get(game_id).update({
+		"white_draw"if w else "black_draw": True
+	}).run(conn)
+	game = r.db("chess").table("games").get(game_id).run(conn)
+	print(convert_to_json_because_rethinkdb_sucks(str(game)))
+
+# todo: elif action == 'unregister':
+elif action == 'rejectdraw':
+	player = form['uuid'].value
+	game_id = form['game'].value
+	hash = hex_digest(player)
+	game = r.db("chess").table("games").get(game_id).run(conn)
+	w = game["white_md5uuid"] == hash
+	r.db("chess").table("games").get(game_id).update({
+		"black_draw" if w else "white_draw" : False
+	}).run(conn)
+	game = r.db("chess").table("games").get(game_id).run(conn)
+	print(convert_to_json_because_rethinkdb_sucks(str(game)))

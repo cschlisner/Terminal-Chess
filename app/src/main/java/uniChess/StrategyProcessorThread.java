@@ -29,6 +29,7 @@ public class StrategyProcessorThread extends Thread {
 
 
     public void run(){
+        System.out.println("Starting thread:"+this);
         runTime = System.currentTimeMillis();
         bestMove= new double[AI_DEPTH];
         worstMove= new double[AI_DEPTH];
@@ -43,6 +44,7 @@ public class StrategyProcessorThread extends Thread {
         
         sm.strategicValue = sm.calculateStrategicValue();
         runTime = System.currentTimeMillis() - runTime;
+        System.out.println("Exiting thread:"+this);
     }
 
     double[] bestMove;

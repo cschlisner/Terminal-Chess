@@ -53,9 +53,13 @@ class ChessGameListAdapter extends ArrayAdapter<JSONObject> {
         textView.setText(game.optString("id").substring(0, 12));
 
         final boolean isw = PostOffice.isWhite(game.optString("white_md5uuid"), uuid);
-        userturn.setText((game.optBoolean("w") ^ isw) ? getContext().getString(R.string.waiting_for_opponent)
-                : getContext().getString(R.string.waiting_for_player));
-
+        userturn.setText((game.optBoolean("w") ^ isw) ? (game.optInt(isw ? "black_draw" : "white_draw") == 1 ?
+                                                            getContext().getString(R.string.draw_offered) :
+                                                            getContext().getString(R.string.waiting_for_opponent)) :
+                                                            (game.optInt(isw ? "white_draw" : "black_draw") == 1 ?
+                                                            getContext().getString(R.string.waiting_for_opponent) :
+                                                            getContext().getString(R.string.waiting_for_player)));
+        userturn.setTypeface(FontManager.getTypeFace());
         BoardView icon = (BoardView) rowView.findViewById(R.id.boardviewer_listicon);
         try {
             icon.setBoard(new Board(gamesJSON.get(position).optString("layout")));

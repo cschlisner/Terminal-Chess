@@ -54,9 +54,8 @@ public class ChessUpdater extends BroadcastReceiver {
             }
             else {
                 int newMoves = 0;
-                boolean drawOffered = false, drawAccepted = false;
-                JSONObject drawnGame = null;
-                JSONObject game = null;
+                boolean drawOffered = false, drawAccepted = false, drawRejected = false;
+                JSONObject game = null, drawngame = null;
 
                 for (int i = 0; i < games.length(); ++i){
                     JSONObject netGame = games.getJSONObject(i);
@@ -68,25 +67,33 @@ public class ChessUpdater extends BroadcastReceiver {
                         System.out.println("Modified game:\n"+game.toString(4));
                     }
                     boolean userIsWhite = PostOffice.isWhite(netGame.getString("white_md5uuid"), uuid);
-                    if (netGame.optBoolean((userIsWhite ? "black_draw" : "white_draw"), false)) {
-                        drawOffered = true;
-                        drawnGame = netGame;
-                        if (savedGame.optBoolean((!userIsWhite ? "black_draw" : "white_draw"), false))
-                            drawAccepted = true;
+                    switch (netGame.optInt(userIsWhite ? "black_draw" : "white_draw")) {
+                        case 0:
+                            break;
+
+                        case -1:
+                            drawRejected = true;
+                            drawngame = netGame;
+                            break;
+                        case 1:
+                            if (netGame.getInt(userIsWhite ? "white_draw" : "black_draw")==1)
+                                drawAccepted = true;
+                            else drawOffered = true;
+                            drawngame = netGame;
+                            break;
                     }
                 }
 
-                if (newMoves > 0 || drawOffered){
+                if (newMoves > 0 || drawOffered || drawAccepted || drawRejected){
                     Intent notificationIntent;
+
                     String text;
 
-                    // Starting wrong game??
                     if (newMoves == 0){
-                        text = (drawAccepted) ? "Draw Accepted." : "Draw Offered.";
+                        text = (drawAccepted) ? "Draw Accepted." : (drawRejected) ? "Draw Rejected." : "Draw Offered.";
                         notificationIntent = new Intent(context, GameActivity.class);
                         notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        notificationIntent.putExtra("uuid", uuid);
-                        notificationIntent.putExtra("gameJSON", game.toString());
+                        notificationIntent.putExtra("gameJSON", drawngame.toString());
                         notificationIntent.putExtra("opponent", OPPONENT_NETWORK);
                     }
                     else if (newMoves == 1 && !drawOffered) {
@@ -97,15 +104,15 @@ public class ChessUpdater extends BroadcastReceiver {
 
                         notificationIntent = new Intent(context, GameActivity.class);
                         notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        notificationIntent.putExtra("uuid", uuid);
                         notificationIntent.putExtra("gameJSON", game.toString());
                         notificationIntent.putExtra("opponent", OPPONENT_NETWORK);
                     }
                     else {
-                        text = "Attacks underway.";
+                        text = "Multiple opponent advancements.";
                         notificationIntent = new Intent(context, ResumeGameActivity.class);
-                        notificationIntent.putExtra("uuid", uuid);
                     }
+                    notificationIntent.putExtra("uuid", uuid);
+                    notificationIntent.putExtra("startFromExt", true);
 
                     PendingIntent pIntent = PendingIntent.getActivity(context, 667, notificationIntent,
                                                 PendingIntent.FLAG_CANCEL_CURRENT);
@@ -156,5 +163,7 @@ public class ChessUpdater extends BroadcastReceiver {
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         alarmManager.cancel(sender);
         sender.cancel();
+        NotificationManager notificationManager = (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancel(665);
     }
 }

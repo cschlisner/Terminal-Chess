@@ -242,14 +242,14 @@ public class Game implements Serializable {
 
 			move = Move.parseMove(getCurrentBoard(), getCurrentPlayer().color, in);
 
-			Board cb = getCurrentBoard();
-			List<Move> legal = cb.getLegalMoves(getCurrentPlayer());
-
-            if (!legal.contains(move))
-				return GameEvent.ILLEGAL;
+//			Board cb = getCurrentBoard();
+//			List<Move> legal = cb.getLegalMoves(getCurrentPlayer());
+//
+//            if (!legal.contains(move))
+//				return GameEvent.ILLEGAL;
 
 			boards.add(move.getSimulation());
-			getCurrentBoard().processLegal();
+//			getCurrentBoard().processLegal();
 
 			whiteMove = !whiteMove;
 

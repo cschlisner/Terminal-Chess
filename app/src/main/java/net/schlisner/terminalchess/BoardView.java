@@ -307,7 +307,8 @@ public class BoardView extends View {
         if (currentlySelected != null && currentlySelected.getValidDestinations().contains(selectedTile)){
             currentlySelected.deselect();
 
-            invalidate();
+            BoardView.this.invalidate();
+
             return new Move(currentlySelected.tile.getLocale(), selectedTile.tile.getLocale(), gameBoard);
         }
 

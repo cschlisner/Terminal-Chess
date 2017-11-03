@@ -29,27 +29,54 @@ import uniChess.Player;
 
 /**
  * Created by cschl_000 on 5/11/2017.
+ *
+ * Static class full of utility and networking methods.
+ * Manages all communication and interpretation of game data.
  */
-
-public class PostOffice {
+class PostOffice {
 
     // Addresses of our friends
     private static final String Server = "http://138.197.213.251/";
     private static final String Chives = Server + "cgi-bin/Chives.py";
     private static final String Chesster = Server + "cgi-bin/Chesster.py";
     private static final int NETWORK_TIMEOUT_SECS = 10;
+
+    /**
+     * Determines which player a user is in a game given the hashes of the player uuids and the users
+     * uuid
+     * @param wmd5uuid hash of white player's uuid
+     * @param uuid uuid of user
+     * @return true if hash of uuid matches wmd5uuid false otherwise
+     */
+    static boolean isWhite(String wmd5uuid, String uuid){
+        return MD5(uuid).equals(wmd5uuid);
+    }
+
+    private static String MD5(String str) {
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+            byte[] array = md.digest(str.getBytes());
+            StringBuffer sb = new StringBuffer();
+            for (byte anArray : array) {
+                sb.append(Integer.toHexString((anArray & 0xFF) | 0x100).substring(1, 3));
+            }
+            return sb.toString();
+        } catch (java.security.NoSuchAlgorithmException ignored) {
+        }
+        return null;
+    }
+
     /**
      * Registers a new chess player with the server and returns the corresponding uuid
      *
      * @return UUID of created player
      */
-    public static String register() throws Exception{
+    static String register() throws Exception{
         MailSend registerPlayer = new MailSend();
         String meme = registerPlayer.execute(Chives, "action", "register").get(NETWORK_TIMEOUT_SECS, TimeUnit.SECONDS);
         meme = meme.trim();
         return meme; // should be just the uuid text
     }
-
     /**
      * Checks player into lobby where it will be matched with another player
      *
@@ -59,6 +86,8 @@ public class PostOffice {
         MailSend checkIn = new MailSend();
         checkIn.execute(Chives, "action", "checkin", "uuid", uuid);
     }
+
+
     /**
      * Checks player out of lobby
      *
@@ -68,7 +97,6 @@ public class PostOffice {
         MailSend checkIn = new MailSend();
         checkIn.execute(Chives, "action", "checkout", "uuid", uuid);
     }
-
 
     /**
      * Attempts to join open game
@@ -80,11 +108,7 @@ public class PostOffice {
         try {
             new MailSend(mcb).execute(Chives, "action", "joingame", "game", gameid, "uuid", uuid)
                         .get(NETWORK_TIMEOUT_SECS, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e) {
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
             e.printStackTrace();
         }
     }
@@ -100,18 +124,14 @@ public class PostOffice {
             System.out.println(String.valueOf(isPublic));
             new MailSend(mcb).execute(Chives, "action", "creategame", "uuid", uuid, "public", String.valueOf(isPublic))
                     .get(NETWORK_TIMEOUT_SECS, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e) {
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
             e.printStackTrace();
         }
     }
-
     static JSONArray listPublicGames(String uuid) throws Exception{
         return listPublicGames(uuid, null);
     }
+
     static JSONArray listPublicGames(String uuid, MailCallback mcb) throws Exception {
         MailSend publicGames = mcb == null ? new MailSend() : new MailSend(mcb);
         String response = publicGames.execute(Chives, "uuid", uuid, "action", "listpublic").get(NETWORK_TIMEOUT_SECS, TimeUnit.SECONDS);
@@ -124,7 +144,7 @@ public class PostOffice {
      * @return List of all games user is engaged in, by time created
  * @param uuid
      */
-    public static JSONArray listGamesJSON(String uuid) throws Exception {
+    static JSONArray listGamesJSON(String uuid) throws Exception {
         return listGamesJSON(uuid, null);
     }
 
@@ -133,7 +153,7 @@ public class PostOffice {
      *
      * @return List of all games user is engaged in, by time created
      */
-    public static JSONArray listGamesJSON(String uuid, MailCallback mcb) throws Exception{
+    static JSONArray listGamesJSON(String uuid, MailCallback mcb) throws Exception{
         uuid = uuid.trim();
         MailSend getGameList = mcb == null ? new MailSend() : new MailSend(mcb);
         String response = getGameList.execute(Chives, "action", "retrievegames", "uuid", uuid)
@@ -146,7 +166,7 @@ public class PostOffice {
      *
      * @return List of all games user is engaged in, by time created
      */
-    public static List<Game> listGames(String uuid) throws Exception {
+    static List<Game> listGames(String uuid) throws Exception {
         return listGames(uuid, null);
     }
 
@@ -155,7 +175,7 @@ public class PostOffice {
      *
      * @return List of all games user is engaged in, by time created
      */
-    public static List<Game> listGames(String uuid, MailCallback mcb) throws Exception{
+    static List<Game> listGames(String uuid, MailCallback mcb) throws Exception{
         List<Game> gameList = new ArrayList<>();
         MailSend getGameList = mcb == null ? new MailSend() : new MailSend(mcb);
         String response = getGameList.execute(Chives, "action", "retrievegames", "uuid", uuid)
@@ -167,7 +187,7 @@ public class PostOffice {
         return gameList;
     }
 
-    public static Game JSONToGame(JSONObject jsonGame){
+    static Game JSONToGame(JSONObject jsonGame){
         String whiteID = jsonGame.optString("white_md5uuid");
         String blackID = jsonGame.optString("black_md5uuid");
 
@@ -193,10 +213,10 @@ public class PostOffice {
 
     /**
      * Make move in a game
- * @param move AN Text of move
+    * @param move AN Text of move
      * @param uuid uuid of user
- * @param gameID uuid of game
- * @param layout
+    * @param gameID uuid of game
+    * @param layout
      */
     public static void sendMove(String move, String uuid, String gameID, String layout) {
         sendMove(move, uuid, gameID, layout, null);
@@ -208,16 +228,15 @@ public class PostOffice {
      * @param uuid uuid of user
      * @param gameID uuid of game
      */
-    public static void sendMove(String move, String uuid, String gameID, String layout, MailCallback mcb){
+    static void sendMove(String move, String uuid, String gameID, String layout, MailCallback mcb){
         MailSend moveMail = new MailSend(mcb);
         moveMail.execute(Chesster, "move", move, "uuid", uuid, "game", gameID, "layout", layout);
     }
 
-    public static JSONObject refreshGameJSON(String gameID) {
+    static JSONObject refreshGameJSON(String gameID) {
         return refreshGameJSON(gameID,null);
     }
-
-    public static JSONObject refreshGameJSON(String gameID, MailCallback mcb) {
+    private static JSONObject refreshGameJSON(String gameID, MailCallback mcb) {
         try {
             MailSend getGame = new MailSend(mcb);
             String response = getGame.execute(Chives, "action", "getgame", "game", gameID)
@@ -227,6 +246,7 @@ public class PostOffice {
             return null;
         }
     }
+
     public static Game refreshGame(String gameID) {
         try {
             MailSend getGame = new MailSend();
@@ -238,76 +258,66 @@ public class PostOffice {
         }
     }
 
-    public static void leaveGame(String uuid, String gameID) {
+    static void leaveGame(String uuid, String gameID) {
         try{
             MailSend leaveGame = new MailSend();
             leaveGame.execute(Chives, "action", "leavegame", "game", gameID, "uuid", uuid);
             System.out.println("leaving game: "+gameID);
-        } catch (Exception e){
-            return;
+        } catch (Exception ignored){
         }
     }
 
-    public static void forfeitGame(String uuid, String gameID) {
+    static void forfeitGame(String uuid, String gameID) {
         try{
             MailSend leaveGame = new MailSend();
             leaveGame.execute(Chives, "action", "forfeit", "game", gameID, "uuid", uuid);
             System.out.println("forfeiting game: "+gameID);
-        } catch (Exception e){
-            return;
+        } catch (Exception ignored){
         }
     }
 
-    public static void offerDraw(String uuid, String gameID, MailCallback mailCallback) {
+    static void offerDraw(String uuid, String gameID, MailCallback mailCallback) {
         try{
             MailSend leaveGame = mailCallback == null ? new MailSend() : new MailSend(mailCallback);
-            leaveGame.execute(Chives, "action", "draw", "game", gameID, "uuid", uuid);
+            leaveGame.execute(Chives, "action", "offerdraw", "game", gameID, "uuid", uuid);
             System.out.println("offering draw: "+gameID);
-        } catch (Exception e){
-            return;
+        } catch (Exception ignored){
         }
     }
 
-    /**
-     * Determines which player a user is in a game given the hashes of the player uuids and the users
-     * uuid
-     * @param wmd5uuid hash of white player's uuid
-     * @param uuid uuid of user
-     * @return true if hash of uuid matches wmd5uuid false otherwise
-     */
-    public static boolean isWhite(String wmd5uuid, String uuid){
-        return MD5(uuid).equals(wmd5uuid);
-    }
-
-    public static String MD5(String str) {
-        try {
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-            byte[] array = md.digest(str.getBytes());
-            StringBuffer sb = new StringBuffer();
-            for (int i = 0; i < array.length; ++i) {
-                sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100).substring(1,3));
-            }
-            return sb.toString();
-        } catch (java.security.NoSuchAlgorithmException e) {
+    static void rejectDraw(String uuid, String gameID, MailCallback mailCallback) {
+        try{
+            MailSend leaveGame = mailCallback == null ? new MailSend() : new MailSend(mailCallback);
+            leaveGame.execute(Chives, "action", "rejectdraw", "game", gameID, "uuid", uuid);
+            System.out.println("rejecting draw: "+gameID);
+        } catch (Exception ignored){
         }
-        return null;
     }
 
-    public static abstract class MailCallback {
-        protected Object[] arguments;
-        public MailCallback(Object... args){
+    static void resetDraw(String uuid, String gameID, MailCallback mailCallback) {
+        try{
+            MailSend leaveGame = mailCallback == null ? new MailSend() : new MailSend(mailCallback);
+            leaveGame.execute(Chives, "action", "resetdraw", "game", gameID, "uuid", uuid);
+            System.out.println("rejecting draw: "+gameID);
+        } catch (Exception ignored){
+        }
+    }
+
+    static abstract class MailCallback {
+        Object[] arguments;
+        MailCallback(Object... args){
             arguments = args;
         }
         public abstract void before();
         public abstract void after(String s);
     }
 
-    public static class MailSend extends AsyncTask<String, Void, String> {
+    private static class MailSend extends AsyncTask<String, Void, String> {
         MailCallback callback = null;
-        public MailSend(MailCallback callback){
+        MailSend(MailCallback callback){
             this.callback = callback;
         }
-        public MailSend(){
+        MailSend(){
         }
         /**
          * Make an HTTP POST request
@@ -336,6 +346,7 @@ public class PostOffice {
         protected String doInBackground(String... params) {
             try {
                 HttpResponse response = getResponse(params);
+                assert response != null;
                 HttpEntity responseEntity = response.getEntity();
                 return EntityUtils.toString(responseEntity);
             } catch (Exception e) {

@@ -1,5 +1,7 @@
 package uniChess;
 
+import android.os.AsyncTask;
+
 import java.io.PrintStream;
 import java.util.List;
 import java.util.ArrayList;
@@ -7,24 +9,20 @@ import java.util.Collections;
 import java.util.Random;
 
 import java.lang.Thread;
+import java.util.concurrent.ThreadPoolExecutor;
 
 
 /**
 *   An object representing a Simulated Player in a chess game. 
 */
 public class Chesster <T> extends Player <T> {
-    public enum StrategyType {LOG, LINEAR, EXP2, EXP4, EXP10}
-
     private Game game;
 
     /** Determines amount of layers to calculate */
-    public int AI_DEPTH = 4;
+    public int AI_DEPTH = 3;
 
-    /** Determines relative weight of piece values */
+    /** Relative weight of material **/
     public int MATERIAL_WEIGHT = 3;
-
-    public StrategyType STRATEGY = StrategyType.EXP4;
-    public boolean dynamic=true;
 
     public Chesster(T id, Game.Color c){
         super(id, c);
@@ -49,11 +47,7 @@ public class Chesster <T> extends Player <T> {
     *   @return the best move
     */
     public String getMove(){
-        SmartMove.MATERIAL_WEIGHT = this.MATERIAL_WEIGHT;
-        if (Board.playerHasCheck(game.getCurrentBoard(), game.getDormantPlayer()))
-            STRATEGY = StrategyType.LOG;
-        else STRATEGY = StrategyType.EXP4;
-        Move best;
+        Move best = null;
 
         List<Move> legal = game.getCurrentBoard().getLegalMoves(this);
         
@@ -62,28 +56,48 @@ public class Chesster <T> extends Player <T> {
         for (Move move : legal)
             smartMoves.add(new SmartMove(move));
 
-        sout.println("# Moves: "+smartMoves.size());
+//        sout.println("# Moves: "+smartMoves.size());
         // sout.println("# Using: "+STRATEGY);
 
         sysTime = System.currentTimeMillis();
 
         List<StrategyProcessorThread> threadPool = new ArrayList<>();
-
-        for (SmartMove sm : smartMoves)
+        for (SmartMove sm : smartMoves) {
             threadPool.add(new StrategyProcessorThread(sm, this));
+            threadPool.get(threadPool.size()-1).setPriority(Thread.MAX_PRIORITY);
+        }
 
-
+        AsyncTask meme = new AsyncTask<Thread, Void, Void>(){
+            @Override
+            protected Void doInBackground(Thread... params) {
+                try {
+                    params[0].join();
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
+                return null;
+            }
+        };
         for (int i = 0; i < smartMoves.size(); ++i){
             threadPool.get(i).start();
             // printProgress(i, smartMoves.size(), threadPool.get(i).sm.toString());
-            try{
-                threadPool.get(i).join();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            meme.execute(threadPool.get(i));
         }
 
         Collections.sort(smartMoves);
+        System.out.println("Starting minimax:");
+        // do minimax for last 3 moves
+        int searchDepth = 2;
+        double best_mm = -10000;
+        for (int i = smartMoves.size()-1; i > smartMoves.size()-4; --i){
+            Move m = smartMoves.get(i);
+            double v = minimax(m, searchDepth, Double.MIN_VALUE, Double.MAX_VALUE, this.color);
+            if (best == null || v > best_mm) {
+                best = m;
+                best_mm = v;
+            }
+        }
+
         long processTime = (System.currentTimeMillis() - sysTime);
 
         int treesize = 0;
@@ -96,18 +110,43 @@ public class Chesster <T> extends Player <T> {
         sout.format("\n# Time : %sms | Avg Move Process Time: %sms\n", processTime, (avgThreadTime / threads));
         sout.format("# Total Sub Move Tree Size: %s | Avg Sub Move Process Time: %sms\n\n", treesize, (processTime / treesize));
 
-
-        // if (smartMoves.get(smartMoves.size()-1).strategicValue == smartMoves.get(smartMoves.size()-2).strategicValue)
-        //     best = smartMoves.get(smartMoves.size()-((new Random()).nextInt(1)+1));
-
-        best = smartMoves.get(smartMoves.size()-1);
-
-        // for (SmartMove saasd : smartMoves)
-        //     sout.println(saasd.getDataSring());
-
         sout.println(((SmartMove)best).getDataSring());
 
         return best.getANString();
+    }
+
+    private double minimax(Move move, int depth, double alpha, double beta, Game.Color color){
+        if (depth == 0){
+            return minmaxevaluate(move);
+        }
+
+        List<Move> responseMoves = move.getSimulation().getOpponentLegalMoves(color);
+
+        if (color.equals(this.color)){
+            double v = Double.MIN_VALUE;
+            for (Move opponentMove : responseMoves){
+                v = Math.max(minimax((opponentMove), depth-1, alpha, beta, Game.getOpposite(color)), v);
+                alpha = Math.max(alpha, v);
+                if (alpha >= beta) break;
+            }
+            return v;
+        }
+        else {
+            double v = Double.MAX_VALUE;
+            for (Move opponentMove : responseMoves){
+                v = Math.min(minimax((opponentMove), depth-1, alpha, beta, Game.getOpposite(color)), v);
+                beta = Math.min(beta, v);
+                if (alpha >= beta) break;
+            }
+            return v;
+        }
+    }
+
+    private double minmaxevaluate(Move move){
+        //return new Random().nextInt(10);/*
+        if (move.CHECKMATE) return Double.MAX_VALUE;
+        Board sim = move.getSimulation();
+        return (sim.getMaterialCount(this.color) / sim.getMaterialCount(Game.getOpposite(this.color)));//*/
     }
 
 
@@ -125,6 +164,7 @@ public class Chesster <T> extends Player <T> {
         sout = out;
     }
 }
+
 
 
 class SmartMove extends Move implements Comparable<SmartMove>{
@@ -161,40 +201,6 @@ class SmartMove extends Move implements Comparable<SmartMove>{
                 else if ( val > best) best = val;
             }
             return best+worst;
-        }
-
-        public double calculateStrategicValue(Chesster.StrategyType stype){
-            double sv = 0;
-            //unWeightedTreeAverages[0] = this.tacticalValue;
-            for (int i = 0; i < unWeightedTreeAverages.length; ++i){
-                
-                double weightedVal = 0;
-                
-                switch (stype){
-                    case LOG:
-                        weightedVal = unWeightedTreeAverages[i] * ( 1.0 / Math.log(i + Math.E) );
-                        break;
-                    
-                    case LINEAR:
-                        weightedVal = unWeightedTreeAverages[i] * ((-(1.0/(unWeightedTreeAverages.length+1)) * (double)i) ) + 1.0;
-                        break;
-                    
-                    case EXP2:
-                        weightedVal = unWeightedTreeAverages[i] * ( 1.0 / Math.pow(2.0, i) );
-                        break;
-
-                    case EXP4:
-                        weightedVal = unWeightedTreeAverages[i] * ( 1.0 / Math.pow(4.0, i) );
-                        break;
-
-                    case EXP10:
-                        weightedVal = unWeightedTreeAverages[i] * ( 1.0 / Math.pow(10.0, i) );
-                        break;
-                }
-
-                sv += weightedVal;
-            }
-            return sv;
         }
 
         /**

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:keepScreenOn="true"
     android:layout_width="match_parent"
@@ -71,49 +71,112 @@
         android:textStyle="bold"
         android:typeface="monospace" />
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <ProgressBar
+        android:id="@+id/gameProgressbar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:indeterminate="true"
+        android:layout_below="@id/deathRowUser"
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/statusBarUser"
+        android:layout_width="wrap_content"
         android:layout_height="match_parent"
+        android:layout_alignParentStart="true"
+        android:layout_below="@id/deathRowUser"
+        android:layout_toStartOf="@id/gameProgressbar"
+        android:fontFamily="monospace"
+
+        android:paddingRight="20dp"
+        android:text="@string/waiting_for_player"
+        android:textAlignment="center"
+        android:textColor="@color/chessBoardHighlight"
+        android:textSize="30sp"
+        android:transitionName="@string/transition_statusbar"
+        android:typeface="monospace" />
+
+    <RelativeLayout
+        android:id="@+id/controlLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/deathRowUser"
+        android:layout_toEndOf="@id/gameProgressbar"
+
         android:orientation="vertical"
-        android:layout_below="@+id/deathRowUser">
+        android:visibility="visible">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/statusBarUser"
-                android:layout_width="128dp"
-                android:layout_height="47dp"
-                android:layout_column="0"
-                android:layout_row="1"
-                android:layout_weight="0.79"
-                android:fontFamily="monospace"
-                android:text="@string/waiting_for_player"
-                android:textAlignment="center"
-                android:textColor="@color/chessBoardHighlight"
-                android:textSize="30sp"
-                android:transitionName="@string/transition_statusbar"
-                android:typeface="monospace" />
-
-            <TextView
-                android:id="@+id/drawStatusUser"
-                android:layout_width="113dp"
+            <LinearLayout
+                android:id="@+id/drawControlLayout"
+                android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_column="0"
-                android:layout_row="1"
-                android:layout_weight="1.02"
-                android:fontFamily="monospace"
-                android:text="@string/offer_draw"
-                android:textAlignment="center"
-                android:textColor="@color/chessBoardHighlight"
-                android:textSize="25dp"
-                android:transitionName="@string/transition_statusbar"
-                android:typeface="monospace" />
+                android:layout_weight="0.79"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <Button
+                    android:id="@+id/drawControlReject"
+                    style="@style/Widget.AppCompat.Button.Borderless"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0.5"
+                    android:background="@drawable/ripple"
+                    android:fontFamily="monospace"
+                    android:onClick="onClickRejectDraw"
+                    android:text="-> reject draw"
+                    android:textAlignment="textStart"
+                    android:textColor="@color/chessBoardCapture"
+                    android:textSize="14sp" />
+
+                <Button
+                    android:id="@+id/drawControlAccept"
+                    style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0.5"
+                    android:background="@drawable/ripple"
+                    android:fontFamily="monospace"
+                    android:onClick="onClickAcceptDraw"
+                    android:text="-> accept draw"
+                    android:textAlignment="center"
+                    android:textColor="@color/chessBoardHighlight"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/drawStatusLayout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="0.79"
+                android:orientation="vertical"
+                android:visibility="visible">
+
+                <TextView
+                    android:id="@+id/drawStatusUser"
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp"
+                    android:layout_column="0"
+                    android:layout_row="1"
+                    android:layout_weight="0.81"
+                    android:fontFamily="monospace"
+                    android:text="@string/offer_draw"
+                    android:textAlignment="center"
+                    android:textColor="@color/chessBoardHighlight"
+                    android:textSize="25dp"
+                    android:transitionName="@string/transition_statusbar"
+                    android:typeface="monospace" />
+            </LinearLayout>
+
         </LinearLayout>
 
-    </LinearLayout>
+    </RelativeLayout>
 
     <TextView
         android:id="@+id/inGameUUID"
@@ -130,13 +193,15 @@
         android:transitionName="@string/transition_statusbar"
         android:typeface="monospace" />
 
-    <ProgressBar
-        android:id="@+id/gameProgressbar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:visibility="visible"
-        android:indeterminate="true"/>
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="239dp"
+        android:layout_below="@+id/deathRowUser"
+        android:layout_centerHorizontal="true"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="18dp"
+        android:layout_weight="1" />
 
 
 </RelativeLayout>

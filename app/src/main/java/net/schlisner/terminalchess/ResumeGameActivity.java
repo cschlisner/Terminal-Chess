@@ -112,6 +112,9 @@ public class ResumeGameActivity extends AppCompatActivity {
                                         e.putInt("score_l", sharedPref.getInt("score_l", 0)+1);
                                         e.apply();
                                     }
+
+                                    // TODO: remove game from saved games as well
+
                                     cgla.remove(geme);
                                     cgla.notifyDataSetChanged();
                                 } catch (Exception e){
@@ -135,7 +138,7 @@ public class ResumeGameActivity extends AppCompatActivity {
         gameList.setAdapter(cgla);
 
         pb = (ProgressBar)findViewById(R.id.meme);
-        pb.getIndeterminateDrawable().setColorFilter(Color.parseColor("#00740c"), PorterDuff.Mode.MULTIPLY);
+        //pb.getIndeterminateDrawable().setColorFilter(Color.parseColor("#00740c"), PorterDuff.Mode.MULTIPLY);
 
 
         loadingMsg = (TextView)findViewById(R.id.loadingText);
@@ -161,36 +164,44 @@ public class ResumeGameActivity extends AppCompatActivity {
         ht = new HandlerThread("networkupdate");
         ht.start();
         updateHandler = new Handler(ht.getLooper());
+
     }
+    Runnable updateTask = new Runnable() {
+        @Override
+        public void run() {
+            if (stop_updates) return;
+            int ok = refreshList();
+            if (ok==0){
+                updateHandler.postDelayed(this,1000);
+            }
+        }
+    };
     @Override
     public void onResume(){
         super.onResume();
+        stop_updates = false;
         final String savedGameList = sharedPref.getString("savedGames", null);
 
 
         // if we have saved games, populate the list with the saved games before updating from network
-
-        updateHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                refreshList();
-            }
-        });
+        updateHandler.post(updateTask);
         ChessUpdater.cancelAlarm(this);
     }
+    boolean stop_updates;
 
     @Override
     public void onPause(){
         super.onPause();
         ChessUpdater.setAlarm(this);
+        updateHandler.removeCallbacks(updateTask);
+        stop_updates = true;
     }
 
     // updates existing gameList with data from network
-    private void refreshList(){
+    private int refreshList(){
         System.out.println("updating games...");
         try {
             final SwipeRefreshLayout swipeRefreshLayout = srl;
-            final Context appContext = this.getApplicationContext();
             PostOffice.listGamesJSON(uuid, new PostOffice.MailCallback() {
                 @Override
                 public void before() {
@@ -240,6 +251,8 @@ public class ResumeGameActivity extends AppCompatActivity {
 
         } catch (Exception e){
             e.printStackTrace();
+            return 1;
         }
+        return 0;
     }
 }

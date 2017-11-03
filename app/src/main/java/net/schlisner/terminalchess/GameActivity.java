@@ -17,7 +17,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
-import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -25,10 +25,14 @@ import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import java.util.Random;
-import java.util.concurrent.ThreadFactory;
 
-import uniChess.*;
+import java.util.Random;
+
+import uniChess.C3P0;
+import uniChess.Chesster;
+import uniChess.Game;
+import uniChess.Move;
+import uniChess.Player;
 
 public class GameActivity extends AppCompatActivity {
 
@@ -36,8 +40,294 @@ public class GameActivity extends AppCompatActivity {
     public static final String OPPONENT_LOCAL = "local";
     public static final String OPPONENT_AI = "ai";
 
+    private static final int DRAW_STATUS_REJECT = -1;
+    private static final int DRAW_STATUS_NONE = 0;
+    private static final int DRAW_STATUS_OFFER = 1;
+
     private Game chessGame;
     private static JSONObject gameJSON;
+
+    Handler updateHandler;
+    HandlerThread mHandlerThread = new HandlerThread("HandlerThread");
+    SharedPreferences sharedPref;
+
+    String uuid;
+
+    boolean userIsWhite=true, returnToMenu, opponentDraw;
+    String opponentType = "";
+
+    String gameJSONString;
+    BoardView boardView;
+    TextView deathRowOpponent;
+    TextView deathRowUser;
+    TextView statusBarUser;
+    TextView drawStatusOpponent;
+    TextView drawStatusUser;
+    LinearLayout drawStatusLayout, drawControlLayout;
+    ProgressBar pb;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        // Fullscreen everything
+        super.onCreate(savedInstanceState);
+        System.out.println("GameActivity: In onCreate()");
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar!=null) actionBar.hide();
+
+        setContentView(R.layout.activity_game);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+
+        pb = (ProgressBar) findViewById(R.id.gameProgressbar);
+        pb.setVisibility(View.INVISIBLE);
+
+        boardView = (BoardView) findViewById(R.id.boardviewer);
+
+        deathRowOpponent = (TextView) findViewById(R.id.deathRowOpponent);
+
+        deathRowUser = (TextView) findViewById(R.id.deathRowUser);
+        statusBarUser = (TextView) findViewById(R.id.statusBarUser);
+
+        drawStatusUser = (TextView) findViewById(R.id.drawStatusUser);
+        drawStatusUser.setTypeface(FontManager.getTypeFace());
+        drawStatusUser.setOnClickListener(drawCL);
+        drawStatusOpponent = (TextView) findViewById(R.id.drawStatusOpponent);
+        drawStatusUser.setTypeface(FontManager.getTypeFace());
+        drawStatusOpponent.setVisibility(View.INVISIBLE);
+        statusBarUser.setVisibility(View.INVISIBLE);
+        drawStatusUser.setVisibility(View.INVISIBLE);
+
+        drawStatusLayout = (LinearLayout)findViewById(R.id.drawStatusLayout);
+        drawControlLayout = (LinearLayout)findViewById(R.id.drawControlLayout);
+
+        boardView.setOnTouchListener(boardTL);
+
+
+        TextView gameUUIDView = (TextView) findViewById(R.id.inGameUUID);
+        gameUUIDView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                ClipboardManager clipboard = (ClipboardManager)
+                        getSystemService(Context.CLIPBOARD_SERVICE);
+                ClipData clip = ClipData.newPlainText("simple text", ((TextView)v).getText());
+                clipboard.setPrimaryClip(clip);
+                Toast.makeText(getApplicationContext(), "Game ID copied to clipboard", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+        });
+        Intent menuIntent = getIntent();
+
+        opponentType = menuIntent.getStringExtra("opponent");
+        uuid = menuIntent.getStringExtra("uuid");
+        sharedPref = this.getSharedPreferences("Dank Memes(c)", Context.MODE_PRIVATE);
+
+        if (opponentType.equals(OPPONENT_NETWORK)) {
+            gameJSONString = menuIntent.getStringExtra("gameJSON");
+
+            try {
+//                all of the logic within this Activity assumes that gameJSON is the most recent state of the game
+                gameJSON = new JSONObject(gameJSONString);
+                statusBarUser.setText(!userIsWhite^gameJSON.optBoolean("w") ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
+                drawStatusUser.setVisibility(!userIsWhite^gameJSON.optBoolean("w") ? View.INVISIBLE : View.VISIBLE);
+                System.out.println("Starting Game: " + gameJSON.toString(4));
+                gameUUIDView.setText(gameJSON.getString("id"));
+                System.out.println("Saving Game: " + gameJSON.getString("id"));
+                saveGame();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            if (menuIntent.getBooleanExtra("startFromExt", false))
+                returnToMenu = true;
+
+            mHandlerThread.start();
+            updateHandler = new Handler(mHandlerThread.getLooper());
+        }
+    }
+
+    @Override
+    public void onStart(){
+        super.onStart();
+        System.out.println("In onStart()");
+
+    }
+
+    boolean stop_updates;
+    @Override
+    public void onPause(){
+        super.onPause();
+        if (updateHandler != null) {
+            updateHandler.removeCallbacks(recieveNetMove);
+            updateHandler.removeCallbacks(drawListener);
+        }
+        stop_updates = true;
+        ChessUpdater.setAlarm(this);
+    }
+
+    @Override
+    public void onBackPressed(){
+        super.onBackPressed();
+        if (returnToMenu){
+            Intent i = new Intent(this, MenuActivity.class);
+            startActivity(i);
+        }
+    }
+
+    @Override
+    public void onResume(){
+        super.onResume();
+        System.out.println("GameActivity: In onResume()");
+
+
+        stop_updates = false;
+
+        deathRowOpponent.setTypeface(FontManager.getTypeFace());
+        deathRowUser.setTypeface(FontManager.getTypeFace());
+        drawStatusOpponent.setTypeface(FontManager.getTypeFace());
+        drawStatusOpponent.setTypeface(FontManager.getTypeFace());
+
+        if (chessGame != null && opponentType.equals(OPPONENT_NETWORK) && !userTurn())
+            updateHandler.post(recieveNetMove);
+
+        
+        if (chessGame == null) {
+            System.out.println("Initializing game");
+            Player<String> playerOne;
+            Player<String> playerTwo;
+            switch (opponentType) {
+
+                case OPPONENT_LOCAL:
+
+                    playerOne = new Player<>("WHITE", Game.Color.WHITE);
+                    playerTwo = new Player<>("BLACK", Game.Color.BLACK);
+                    chessGame = new Game(playerOne, playerTwo);
+                    boardView.updateValidMoves();
+                    break;
+
+                case OPPONENT_NETWORK:
+                    statusBarUser.setVisibility(View.VISIBLE);
+                    drawStatusUser.setVisibility(View.VISIBLE);
+                    try {
+                        userIsWhite = PostOffice.isWhite(gameJSON.getString("white_md5uuid"), uuid);
+//                        System.out.println("UserIsWhite: " + userIsWhite + " !userTurn(): " + !userTurn());
+
+
+                        new AsyncTask<JSONObject, Void, Void>() {
+                            @Override
+                            protected Void doInBackground(JSONObject[] params) {
+
+                                chessGame = PostOffice.JSONToGame(params[0]);
+                                return null;
+                            }
+
+                            @Override
+                            protected void onPostExecute(Void res) {
+                                if (chessGame.getBoardList().size() > 1) {
+                                    boardView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                        @Override
+                                        public void onGlobalLayout() {
+                                            boardView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                            boardView.setBoard(chessGame.getBoardList().get(chessGame.getBoardList().size() - 2));
+                                            boardView.animateMove(chessGame.getLastMove(), chessGame.getCurrentBoard());
+                                        }
+                                    });
+
+                                }
+                                else {
+                                    boardView.setBoard(chessGame.getCurrentBoard());
+                                    boardView.updateValidMoves();
+                                }
+                                statusBarUser.setText(!userTurn() ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
+                                drawStatusUser.setVisibility(!userTurn() ? View.INVISIBLE : View.VISIBLE);
+
+                                deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
+                                deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
+
+
+                                if (!userTurn()) {
+                                    updateHandler.postDelayed(recieveNetMove, (long)Math.E*1100);
+                                }
+                                else if (getDrawStatusUser() == DRAW_STATUS_OFFER) {
+                                        drawStatusUser.setVisibility(View.VISIBLE);
+                                        drawStatusUser.setText(getString(R.string.draw_offered));
+                                        statusBarUser.setText(getString(R.string.waiting_for_opponent));
+                                        boardView.setOnTouchListener(null);
+                                        updateHandler.post(drawListener);
+                                }
+                            }
+                        }.execute(gameJSON);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        Toast.makeText(getApplicationContext(), String.format("Could not initialize game. Your opponent is likely hacking."), Toast.LENGTH_SHORT).show();
+                    }
+                    break;
+
+                case OPPONENT_AI:
+                    userIsWhite = (new Random(System.currentTimeMillis())).nextBoolean();
+
+                    Toast.makeText(getApplicationContext(), String.format("You will be playing as %s", userIsWhite ? "white" : "black"), Toast.LENGTH_SHORT).show();
+                    playerTwo = userIsWhite ? new C3P0<>("BLACK", Game.Color.BLACK)
+                            : new Player<>("BLACK", Game.Color.BLACK);
+                    playerOne = userIsWhite ? new Player<>("WHITE", Game.Color.WHITE)
+                            : new C3P0<>("WHITE", Game.Color.WHITE);
+                    chessGame = new Game(playerOne, playerTwo);
+                    boardView.updateValidMoves();
+
+                    if (!userIsWhite)
+                        gameAdvance(((C3P0)playerOne).getMove(), false);
+
+                    break;
+            }
+        }
+        boardView.setFlipped(!userIsWhite);
+        ChessUpdater.cancelAlarm(this);
+    }
+
+    public void onClickAcceptDraw(View v){
+        PostOffice.offerDraw(uuid, gameJSON.optString("id"), new PostOffice.MailCallback() {
+            @Override
+            public void before() {
+
+            }
+
+            @Override
+            public void after(String s) {
+                try {
+                    gameJSON = new JSONObject(s);
+                    Toast.makeText(getApplicationContext(), "Draw Accepted.", Toast.LENGTH_SHORT).show();
+                    completeGameAndExit(DRAW);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    Toast.makeText(getApplicationContext(), "No response from server.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    public void onClickRejectDraw(View v){
+        PostOffice.rejectDraw(uuid, gameJSON.optString("id"), new PostOffice.MailCallback() {
+            @Override
+            public void before() {
+            }
+
+            @Override
+            public void after(String s) {
+                try {
+                    System.out.println("RECIEVED: "+s);
+                    gameJSON = new JSONObject(s);
+                    Toast.makeText(getApplicationContext(), "Draw Rejected.", Toast.LENGTH_SHORT).show();
+                    drawControlLayout.setVisibility(View.GONE);
+                    drawStatusLayout.setVisibility(View.INVISIBLE);
+                    statusBarUser.setText(getString(R.string.waiting_for_opponent));
+                    updateHandler.post(recieveNetMove);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    Toast.makeText(getApplicationContext(), "No response from server.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
 
     Runnable recieveNetMove = new Runnable() {
         @Override
@@ -48,8 +338,9 @@ public class GameActivity extends AppCompatActivity {
                 if (gameJSON == null)
                     return;
 
-                if (gameJSON.get(userIsWhite ? "black_md5uuid"  : "white_md5uuid").equals("F")){
+                System.out.println("listening...");
 
+                if (gameJSON.get(userIsWhite ? "black_md5uuid"  : "white_md5uuid").equals("F")){
                     AlertDialog.Builder adbuilder = new AlertDialog.Builder(GameActivity.this);
                     adbuilder.setTitle("Opponent has forfeit game.")
                             .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -62,18 +353,7 @@ public class GameActivity extends AppCompatActivity {
                     ad.show();
                     return;
                 }
-                if (!opponentDraw && gameJSON.optBoolean((userIsWhite ? "black_draw" : "white_draw"), false)){
-                    opponentDraw = true;
-                    Toast.makeText(getApplicationContext(), "Opponent has offered draw.", Toast.LENGTH_SHORT).show();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            drawStatusOpponent.setVisibility(View.VISIBLE);
-                        }
-                    });
-                    return;
-                }
-                System.out.println(gameJSON.getJSONArray("moves"));
+
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -83,6 +363,53 @@ public class GameActivity extends AppCompatActivity {
                     }
                 });
 
+                if (getDrawStatusOpponent() == DRAW_STATUS_NONE || (getDrawStatusOpponent() == DRAW_STATUS_OFFER && getDrawStatusUser() == DRAW_STATUS_REJECT)){
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            drawStatusOpponent.setVisibility(View.INVISIBLE);
+                        }
+                    });
+                }
+                else if (getDrawStatusOpponent() == DRAW_STATUS_OFFER){
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            drawStatusOpponent.setVisibility(View.VISIBLE);
+                        }
+                    });
+                    opponentDraw = true;
+                    if (getDrawStatusUser() == DRAW_STATUS_OFFER){
+                        Toast.makeText(getApplicationContext(), "Draw accepted.", Toast.LENGTH_SHORT).show();
+                        PostOffice.offerDraw(uuid, gameJSON.optString("id"), new PostOffice.MailCallback() {
+                            @Override
+                            public void before() {
+                            }
+
+                            @Override
+                            public void after(String s) {
+                                try {
+                                    completeGameAndExit(DRAW);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    Toast.makeText(getApplicationContext(), "Oh Christ", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        });
+                    }
+                    else {
+                        Toast.makeText(getApplicationContext(), "Opponent has offered draw.", Toast.LENGTH_SHORT).show();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                drawStatusLayout.setVisibility(View.GONE);
+                                drawControlLayout.setVisibility(View.VISIBLE);
+                                statusBarUser.setText(getString(R.string.waiting_for_player));
+                            }
+                        });
+                    }
+                    return;
+                }
                 if (gameJSON.getBoolean("w") != userIsWhite)
                     updateHandler.postDelayed(this, 1000);
                 else {
@@ -101,6 +428,85 @@ public class GameActivity extends AppCompatActivity {
             } catch (Exception e){
                 e.printStackTrace();
             }
+        }
+    };
+
+    Runnable drawListener = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                if (stop_updates) return;
+                gameJSON = PostOffice.refreshGameJSON(gameJSON.getString("id"));
+                if (gameJSON == null)
+                    return;
+
+                if (gameJSON.get(userIsWhite ? "black_md5uuid" : "white_md5uuid").equals("F")) {
+                    AlertDialog.Builder adbuilder = new AlertDialog.Builder(GameActivity.this);
+                    adbuilder.setTitle("Opponent has forfeit game.")
+                            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    completeGameAndExit(WIN);
+                                }
+                            });
+                    AlertDialog ad = adbuilder.create();
+                    ad.show();
+                    return;
+                }
+
+                System.out.println(gameJSON.getJSONArray("moves"));
+
+                if (getDrawStatusOpponent() == DRAW_STATUS_OFFER) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            drawStatusOpponent.setVisibility(View.VISIBLE);
+                        }
+                    });
+                    opponentDraw = true;
+                    Toast.makeText(getApplicationContext(), "Draw accepted.", Toast.LENGTH_SHORT).show();
+                    PostOffice.resetDraw(uuid, gameJSON.optString("id"), new PostOffice.MailCallback() {
+                        @Override
+                        public void before() {
+                        }
+
+                        @Override
+                        public void after(String s) {
+                            try {
+                                completeGameAndExit(DRAW);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                Toast.makeText(getApplicationContext(), "Oh Christ", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    });
+                }
+                else if (getDrawStatusOpponent() == DRAW_STATUS_REJECT){
+                    PostOffice.resetDraw(uuid, gameJSON.getString("id"), new PostOffice.MailCallback() {
+                        @Override
+                        public void before() {
+
+                        }
+
+                        @Override
+                        public void after(String s) {
+                            Toast.makeText(getApplicationContext(), "Draw rejected.", Toast.LENGTH_SHORT).show();
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    statusBarUser.setText(getString(R.string.waiting_for_player));
+                                    drawStatusUser.setVisibility(View.INVISIBLE);
+                                }
+                            });
+                            boardView.setOnTouchListener(boardTL);
+                        }
+                    });
+                }
+                else updateHandler.postDelayed(this, 1000);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
         }
     };
 
@@ -145,6 +551,9 @@ public class GameActivity extends AppCompatActivity {
                                         public void after(String s) {
                                             System.out.println("RECIEVED: "+s);
                                             ((TextView) v).setText(getText(R.string.draw_offered));
+                                            statusBarUser.setText(getString(R.string.waiting_for_opponent));
+                                            boardView.setOnTouchListener(null);
+                                            updateHandler.postDelayed(drawListener, 1000);
                                             try {
                                                 gameJSON = new JSONObject(s);
                                                 saveGame();
@@ -187,220 +596,6 @@ public class GameActivity extends AppCompatActivity {
         }
     };
 
-    Handler updateHandler;
-    HandlerThread mHandlerThread = new HandlerThread("HandlerThread");
-    SharedPreferences sharedPref;
-
-    String uuid;
-
-    boolean userIsWhite=true, returnToMenu, opponentDraw;
-    String opponentType = "";
-
-    String gameJSONString;
-    BoardView boardView;
-    TextView deathRowOpponent;
-    TextView deathRowUser;
-    TextView statusBarUser;
-    TextView drawStatusOpponent;
-    TextView drawStatusUser;
-    ProgressBar pb;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        // Fullscreen everything
-        super.onCreate(savedInstanceState);
-        System.out.println("GameActivity: In onCreate()");
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar!=null) actionBar.hide();
-
-        setContentView(R.layout.activity_game);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
-
-        pb = (ProgressBar) findViewById(R.id.gameProgressbar);
-        pb.setVisibility(View.GONE);
-
-        boardView = (BoardView) findViewById(R.id.boardviewer);
-
-        deathRowOpponent = (TextView) findViewById(R.id.deathRowOpponent);
-
-        deathRowUser = (TextView) findViewById(R.id.deathRowUser);
-        statusBarUser = (TextView) findViewById(R.id.statusBarUser);
-
-        drawStatusUser = (TextView) findViewById(R.id.drawStatusUser);
-        drawStatusUser.setTypeface(FontManager.getTypeFace());
-        drawStatusUser.setOnClickListener(drawCL);
-        drawStatusOpponent = (TextView) findViewById(R.id.drawStatusOpponent);
-        drawStatusUser.setTypeface(FontManager.getTypeFace());
-        drawStatusOpponent.setVisibility(View.INVISIBLE);
-
-
-
-        TextView gameUUIDView = (TextView) findViewById(R.id.inGameUUID);
-        gameUUIDView.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                ClipboardManager clipboard = (ClipboardManager)
-                        getSystemService(Context.CLIPBOARD_SERVICE);
-                ClipData clip = ClipData.newPlainText("simple text", ((TextView)v).getText());
-                clipboard.setPrimaryClip(clip);
-                Toast.makeText(getApplicationContext(), "Game ID copied to clipboard", Toast.LENGTH_SHORT).show();
-                return false;
-            }
-        });
-        Intent menuIntent = getIntent();
-
-        opponentType = menuIntent.getStringExtra("opponent");
-        uuid = menuIntent.getStringExtra("uuid");
-        sharedPref = this.getSharedPreferences("Dank Memes(c)", Context.MODE_PRIVATE);
-
-        if (opponentType.equals(OPPONENT_NETWORK)) {
-            gameJSONString = menuIntent.getStringExtra("gameJSON");
-
-            try {
-                gameJSON = new JSONObject(gameJSONString);
-                statusBarUser.setText(!userIsWhite^gameJSON.optBoolean("w") ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
-                drawStatusUser.setVisibility(!userIsWhite^gameJSON.optBoolean("w") ? View.INVISIBLE : View.VISIBLE);
-                System.out.println("Starting Game: " + gameJSON.toString(4));
-                gameUUIDView.setText(gameJSON.getString("id"));
-                System.out.println("Saving Game: " + gameJSON.getString("id"));
-                saveGame();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            if (menuIntent.getBooleanExtra("startFromExt", false))
-                returnToMenu = true;
-
-            mHandlerThread.start();
-            updateHandler = new Handler(mHandlerThread.getLooper());
-        }
-    }
-
-    @Override
-    public void onStart(){
-        super.onStart();
-        System.out.println("In onStart()");
-
-    }
-
-    boolean stop_updates;
-    @Override
-    public void onPause(){
-        super.onPause();
-        if (updateHandler != null)
-            updateHandler.removeCallbacks(recieveNetMove);
-        stop_updates = true;
-        ChessUpdater.setAlarm(this);
-    }
-
-    @Override
-    public void onBackPressed(){
-        super.onBackPressed();
-        if (returnToMenu){
-            Intent i = new Intent(this, ResumeGameActivity.class);
-            i.putExtra("uuid", uuid);
-            startActivity(i);
-        }
-    }
-
-    @Override
-    public void onResume(){
-        super.onResume();
-        System.out.println("GameActivity: In onResume()");
-
-
-        stop_updates = false;
-
-        boardView.setOnTouchListener(boardTL);
-        deathRowOpponent.setTypeface(FontManager.getTypeFace());
-        deathRowUser.setTypeface(FontManager.getTypeFace());
-        if (chessGame != null && opponentType.equals(OPPONENT_NETWORK) && !userTurn())
-            updateHandler.post(recieveNetMove);
-
-        
-        if (chessGame == null) {
-            System.out.println("Initializing game");
-            Player<String> playerOne;
-            Player<String> playerTwo;
-            switch (opponentType) {
-
-                case OPPONENT_LOCAL:
-                    playerOne = new Player<>("WHITE", Game.Color.WHITE);
-                    playerTwo = new Player<>("BLACK", Game.Color.BLACK);
-                    chessGame = new Game(playerOne, playerTwo);
-                    boardView.updateValidMoves();
-                    break;
-
-                case OPPONENT_NETWORK:
-                    try {
-                        userIsWhite = PostOffice.isWhite(gameJSON.getString("white_md5uuid"), uuid);
-//                        System.out.println("UserIsWhite: " + userIsWhite + " !userTurn(): " + !userTurn());
-
-
-                        new AsyncTask<JSONObject, Void, Void>() {
-                            @Override
-                            protected Void doInBackground(JSONObject[] params) {
-
-                                chessGame = PostOffice.JSONToGame(params[0]);
-                                return null;
-                            }
-
-                            @Override
-                            protected void onPostExecute(Void res) {
-                                if (chessGame.getBoardList().size() > 1) {
-                                    boardView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                                        @Override
-                                        public void onGlobalLayout() {
-                                            boardView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-
-                                            boardView.setBoard(chessGame.getBoardList().get(chessGame.getBoardList().size() - 2));
-                                            boardView.animateMove(chessGame.getLastMove(), chessGame.getCurrentBoard());
-                                        }
-                                    });
-
-                                }
-                                else {
-                                    boardView.setBoard(chessGame.getCurrentBoard());
-                                    boardView.updateValidMoves();
-                                }
-                                statusBarUser.setText(!userTurn() ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
-                                drawStatusUser.setVisibility(!userTurn() ? View.INVISIBLE : View.VISIBLE);
-
-                                deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
-                                deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
-                                if (!userTurn()) {
-                                    updateHandler.postDelayed(recieveNetMove, (long)Math.E*1100);
-                                }
-                            }
-                        }.execute(gameJSON);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        Toast.makeText(getApplicationContext(), String.format("Could not initialize game. Your opponent is likely hacking."), Toast.LENGTH_SHORT).show();
-                    }
-                    break;
-
-                case OPPONENT_AI:
-                    userIsWhite = (new Random(System.currentTimeMillis())).nextBoolean();
-
-                    Toast.makeText(getApplicationContext(), String.format("You will be playing as %s", userIsWhite ? "white" : "black"), Toast.LENGTH_SHORT).show();
-                    playerTwo = userIsWhite ? new C3P0<>("BLACK", Game.Color.BLACK)
-                            : new Player<>("BLACK", Game.Color.BLACK);
-                    playerOne = userIsWhite ? new Player<>("WHITE", Game.Color.WHITE)
-                            : new C3P0<>("WHITE", Game.Color.WHITE);
-                    chessGame = new Game(playerOne, playerTwo);
-                    boardView.updateValidMoves();
-
-                    if (!userIsWhite)
-                        gameAdvance(((C3P0)playerOne).getMove(), false);
-
-                    break;
-            }
-        }
-        boardView.setFlipped(!userIsWhite);
-        ChessUpdater.cancelAlarm(this);
-    }
-
     private void gameAdvance(final String in, final boolean netMove){
         System.out.println("Input: "+in);
 
@@ -437,15 +632,17 @@ public class GameActivity extends AppCompatActivity {
                                 drawStatusUser.setVisibility(!userTurn() ? View.INVISIBLE : View.VISIBLE);
 
                                 saveMove(in);
-                                if (!netMove)
+                                if (!netMove) {
                                     sendMove(in);
+                                }
+                                boardView.setOnTouchListener(boardTL);
                                 break;
 
                             case OPPONENT_AI:
                                 // user just made move
                                 if (userIsWhite ^ chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE)){
                                     // get response move from ai
-                                    gameAdvance(((C3P0)chessGame.getCurrentPlayer()).getMove(), false);
+                                    gameAdvance((chessGame.getCurrentPlayer()).getMove(), false);
                                 }
                                 break;
                         }
@@ -501,6 +698,28 @@ public class GameActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+
+    // TODO: make network player container objects - extend player
+    private int getDrawStatusUser(){
+        try {
+            if (gameJSON != null)
+                return gameJSON.getInt(userIsWhite ? "white_draw" : "black_draw");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    private int getDrawStatusOpponent(){
+        try {
+            if (gameJSON != null)
+                return gameJSON.getInt(userIsWhite ? "black_draw" : "white_draw");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 
     private void completeGameAndExit(int score){
@@ -601,15 +820,23 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void saveGame(){
+        sharedPref = this.getSharedPreferences("Dank Memes(c)", Context.MODE_PRIVATE);
         String games = sharedPref.getString("savedGames", null);
         if (games != null){
             try {
                 SharedPreferences.Editor e = sharedPref.edit();
                 JSONArray gameArr = new JSONArray(games);
-                for (int i = 0; i < gameArr.length(); ++i)
-                    if (gameArr.optJSONObject(i).getString("id").equals(gameJSON.getString("id")))
+                boolean inSaved = false;
+                for (int i = 0; i < gameArr.length(); ++i) {
+                    if (gameArr.optJSONObject(i).getString("id").equals(gameJSON.getString("id"))) {
+                        inSaved = true;
                         gameArr.remove(i);
-                gameArr.put(gameJSON);
+                        gameArr.put(i, gameJSON);
+                        break;
+                    }
+                }
+                if (!inSaved)
+                    gameArr.put(gameJSON);
                 e.putString("savedGames", gameArr.toString());
                 e.apply();
             }catch (Exception e){

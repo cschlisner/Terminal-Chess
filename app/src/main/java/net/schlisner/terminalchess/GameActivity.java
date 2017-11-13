@@ -26,9 +26,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.Random;
-
-import uniChess.C3P0;
 import uniChess.Chesster;
 import uniChess.Game;
 import uniChess.Move;
@@ -44,6 +41,8 @@ public class GameActivity extends AppCompatActivity {
     private static final int DRAW_STATUS_NONE = 0;
     private static final int DRAW_STATUS_OFFER = 1;
 
+    Player<String> playerOne;
+    Player<String> playerTwo;
     private Game chessGame;
     private static JSONObject gameJSON;
 
@@ -100,7 +99,6 @@ public class GameActivity extends AppCompatActivity {
         drawStatusLayout = (LinearLayout)findViewById(R.id.drawStatusLayout);
         drawControlLayout = (LinearLayout)findViewById(R.id.drawControlLayout);
 
-        boardView.setOnTouchListener(boardTL);
 
 
         TextView gameUUIDView = (TextView) findViewById(R.id.inGameUUID);
@@ -140,9 +138,9 @@ public class GameActivity extends AppCompatActivity {
             if (menuIntent.getBooleanExtra("startFromExt", false))
                 returnToMenu = true;
 
-            mHandlerThread.start();
-            updateHandler = new Handler(mHandlerThread.getLooper());
         }
+        mHandlerThread.start();
+        updateHandler = new Handler(mHandlerThread.getLooper());
     }
 
     @Override
@@ -189,19 +187,16 @@ public class GameActivity extends AppCompatActivity {
         if (chessGame != null && opponentType.equals(OPPONENT_NETWORK) && !userTurn())
             updateHandler.post(recieveNetMove);
 
-        
+
         if (chessGame == null) {
             System.out.println("Initializing game");
-            Player<String> playerOne;
-            Player<String> playerTwo;
+
             switch (opponentType) {
 
                 case OPPONENT_LOCAL:
-
                     playerOne = new Player<>("WHITE", Game.Color.WHITE);
                     playerTwo = new Player<>("BLACK", Game.Color.BLACK);
-                    chessGame = new Game(playerOne, playerTwo);
-                    boardView.updateValidMoves();
+                    updateHandler.postDelayed(gameInit, 50);
                     break;
 
                 case OPPONENT_NETWORK:
@@ -229,10 +224,18 @@ public class GameActivity extends AppCompatActivity {
                                             boardView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
 
                                             boardView.setBoard(chessGame.getBoardList().get(chessGame.getBoardList().size() - 2));
-                                            boardView.animateMove(chessGame.getLastMove(), chessGame.getCurrentBoard());
+                                            boardView.animateMove(chessGame.getLastMove(), new PostOffice.MailCallback() {
+                                                @Override
+                                                public void before() {
+                                                }
+
+                                                @Override
+                                                public void after(String s) {
+                                                    boardView.setBoard(chessGame.getCurrentBoard());
+                                                }
+                                            });
                                         }
                                     });
-
                                 }
                                 else {
                                     boardView.setBoard(chessGame.getCurrentBoard());
@@ -243,6 +246,8 @@ public class GameActivity extends AppCompatActivity {
 
                                 deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
                                 deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
+
+                                boardView.setOnTouchListener(boardTL);
 
 
                                 if (!userTurn()) {
@@ -264,19 +269,14 @@ public class GameActivity extends AppCompatActivity {
                     break;
 
                 case OPPONENT_AI:
-                    userIsWhite = (new Random(System.currentTimeMillis())).nextBoolean();
-
+//                    userIsWhite = (new Random(System.currentTimeMillis())).nextBoolean();
+                    userIsWhite = true;
                     Toast.makeText(getApplicationContext(), String.format("You will be playing as %s", userIsWhite ? "white" : "black"), Toast.LENGTH_SHORT).show();
-                    playerTwo = userIsWhite ? new C3P0<>("BLACK", Game.Color.BLACK)
+                    playerTwo = userIsWhite ? new Chesster<>("BLACK", Game.Color.BLACK)
                             : new Player<>("BLACK", Game.Color.BLACK);
                     playerOne = userIsWhite ? new Player<>("WHITE", Game.Color.WHITE)
-                            : new C3P0<>("WHITE", Game.Color.WHITE);
-                    chessGame = new Game(playerOne, playerTwo);
-                    boardView.updateValidMoves();
-
-                    if (!userIsWhite)
-                        gameAdvance(((C3P0)playerOne).getMove(), false);
-
+                            : new Chesster<>("WHITE", Game.Color.WHITE);
+                    updateHandler.postDelayed(gameInitAI, 2);
                     break;
             }
         }
@@ -328,6 +328,25 @@ public class GameActivity extends AppCompatActivity {
             }
         });
     }
+
+    Runnable gameInit = new Runnable() {
+        @Override
+        public void run() {
+            chessGame = new Game(playerOne, playerTwo);
+            boardView.updateValidMoves();
+            boardView.setOnTouchListener(boardTL);
+        }
+    };
+
+    Runnable gameInitAI = new Runnable() {
+        @Override
+        public void run() {
+            chessGame = new Game(playerOne, playerTwo);
+            chessGame.logging = true;
+            boardView.updateValidMoves();
+            boardView.setOnTouchListener(boardTL);
+        }
+    };
 
     Runnable recieveNetMove = new Runnable() {
         @Override
@@ -598,16 +617,24 @@ public class GameActivity extends AppCompatActivity {
 
     private void gameAdvance(final String in, final boolean netMove){
         System.out.println("Input: "+in);
-
-        final Game.GameEvent gameResponse = chessGame.advance(in);
-
-        System.out.println("Game response: "+gameResponse);
-
-        boardView.animateMove(chessGame.getLastMove(), chessGame.getCurrentBoard(), opponentType.equals(OPPONENT_LOCAL), new PostOffice.MailCallback(){
+        Move m = null;
+        try {
+            m = Move.parseMove(chessGame.getCurrentBoard(), chessGame.getCurrentPlayer().color, in);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        boardView.animateMove(m, new PostOffice.MailCallback(){
             @Override
             public void before() {}
             @Override
             public void after(String s) {
+                final Game.GameEvent gameResponse = chessGame.advance(in);
+                System.out.println("Game response: "+gameResponse);
+
+                boardView.setBoard(chessGame.getCurrentBoard());
+                if (opponentType.equals(OPPONENT_LOCAL))
+                    boardView.flipBoard();
+
                 deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
                 deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
                 SharedPreferences.Editor e = sharedPref.edit();
@@ -615,7 +642,7 @@ public class GameActivity extends AppCompatActivity {
                     case CHECK:
                         Toast.makeText(getApplicationContext(), "Check!", Toast.LENGTH_SHORT).show();
                     case OK:
-
+                        boardView.updateValidMoves();
                         switch (opponentType){
 
                             case OPPONENT_LOCAL:

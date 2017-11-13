@@ -1,8 +1,8 @@
 package uniChess;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
 *	An object for creating, maintaining, and communicating with a chess game.
@@ -24,6 +24,9 @@ public class Game implements Serializable {
 
 	/** Restricts unicode characters to filled in type. */
 	public static boolean useDarkChars = false;
+
+	/** Outputs GameException stacktrace to stdout. */
+	public static boolean logging = false;
 
 	private boolean whiteMove = true;
 
@@ -267,7 +270,8 @@ public class Game implements Serializable {
 			else if (Board.playerHasCheck(getCurrentBoard(), getDormantPlayer()))
 				return GameEvent.CHECK;
 		} catch (GameException ge){
-				
+				if (logging)
+					ge.printStackTrace();
 				switch (ge.getType()) {
 					
 					case GameException.INVALID_MOVE:

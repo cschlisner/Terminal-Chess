@@ -1,34 +1,22 @@
 package net.schlisner.terminalchess;
 
-import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
-import android.app.Activity;
 import android.content.Context;
 import android.content.res.Resources;
-import android.content.res.TypedArray;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Typeface;
-import android.graphics.drawable.Drawable;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.widget.ActionBarOverlayLayout;
-import android.text.TextPaint;
 import android.util.AttributeSet;
-import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.w3c.dom.Attr;
-
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import uniChess.*;
+import uniChess.Board;
+import uniChess.Location;
+import uniChess.Move;
+import uniChess.Player;
 
 public class BoardView extends View {
 
@@ -99,18 +87,17 @@ public class BoardView extends View {
 
     /**
      * Animates move transition on board
- * @param move move to animate
- * @param board
+     * @param move move to animate
      */
-    public void animateMove(final Move move, final Board board) {
-        animateMove(move, board, false, null);
+    public void animateMove(final Move move) {
+        animateMove(move, null);
     }
 
     /**
      * Animates move transition on board
      * @param move move to animate
      */
-    public void animateMove(final Move move, final Board board, final boolean flip, final PostOffice.MailCallback mcb){
+    public void animateMove(final Move move, final PostOffice.MailCallback mcb){
         BoardView.this.invalidate();
 
         for (int i = 0; i < 8; ++i){
@@ -152,11 +139,13 @@ public class BoardView extends View {
                 destination.setCharAlpha((int)((1.0-progress)*255f));
                 BoardView.this.invalidate();
 
+                // TODO: figure out wtf is going on with this
+//                if (move.PROMOTION){
+//                    destination.tile.setOccupator(Piece.synthesizePiece((move.movingPiece.color == Game.Color.BLACK) ? 'Q':'q'));
+//                }
+
                 if (progress == 1.0){
                     origin.animating = false;
-                    setBoard(board, true);
-                    if (flip)
-                        flipBoard();
                     if (mcb != null)
                         mcb.after("");
                 }

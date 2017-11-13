@@ -4,27 +4,14 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.NetworkInfo;
-import android.net.wifi.WifiManager;
+import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.text.format.Formatter;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import org.json.JSONObject;
-import org.w3c.dom.Text;
-
-import java.util.List;
-import java.util.concurrent.TimeoutException;
-
-import uniChess.Game;
-import uniChess.Player;
 
 public class MenuActivity extends AppCompatActivity {
     String uuid;
@@ -78,6 +65,7 @@ public class MenuActivity extends AppCompatActivity {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 try {
+                                    // TODO: actually forfeit all games
                                     uuid = PostOffice.register();
                                     SharedPreferences.Editor editor = sharedPref.edit();
                                     editor.putString("uuid", uuid);

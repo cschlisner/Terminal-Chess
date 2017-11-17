@@ -3,18 +3,14 @@ package net.schlisner.terminalchess;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.DrawFilter;
 import android.graphics.Paint;
-import android.graphics.RectF;
-import android.graphics.Typeface;
-import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.text.TextPaint;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import uniChess.*;
+import uniChess.Board;
 import uniChess.Game;
 
 /**
@@ -112,7 +108,8 @@ public class TileDisplay {
         piecePaint.setTextSize(dimensions-(0.1f*dimensions));
         piecePaint.setTextAlign(Paint.Align.LEFT);
         piecePaint.setTypeface(FontManager.getTypeFace());
-
+//        if (tile != null && tile.getOccupator() != null)
+//            piecePaint.setColor(tile.getOccupator().passable ? Color.RED : pieceColor);
 
         float sw = tilePaint.getStrokeWidth()+11;
 //        System.out.println("drawing piecetf="+piecePaint.getTypeface());

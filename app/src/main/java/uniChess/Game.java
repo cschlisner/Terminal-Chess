@@ -237,7 +237,7 @@ public class Game implements Serializable {
 	*	@return The player who moved last.
 	*/
 	public GameEvent advance(String in){
-		Move move = null;
+		Move move;
 		try {
 			if (white.draw && black.draw) {
 				return GameEvent.DRAW;
@@ -252,14 +252,13 @@ public class Game implements Serializable {
 //				return GameEvent.ILLEGAL;
 
 			boards.add(move.getSimulation());
-//			getCurrentBoard().processLegal();
+			getCurrentBoard().processLegal();
 
 			whiteMove = !whiteMove;
 
 			gameString += move.getANString()+",";
 
-			if (move != null)
-				lastMove = move;
+			lastMove = move;
 
 			if (Board.playerHasCheck(getCurrentBoard(), getDormantPlayer()) && getCurrentBoard().getLegalMoves(getCurrentPlayer()).isEmpty())
 				return GameEvent.CHECKMATE;

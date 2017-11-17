@@ -1,25 +1,21 @@
 package net.schlisner.terminalchess;
-import android.os.AsyncTask;
-import android.view.View;
-import android.widget.ProgressBar;
 
-import java.io.IOException;
+import android.os.AsyncTask;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import org.json.*;
-import java.security.MessageDigest;
 import java.util.concurrent.TimeoutException;
 
-import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.HttpEntity;
 import cz.msebera.android.httpclient.HttpResponse;
 import cz.msebera.android.httpclient.NameValuePair;
 import cz.msebera.android.httpclient.client.HttpClient;
 import cz.msebera.android.httpclient.client.entity.UrlEncodedFormEntity;
-import cz.msebera.android.httpclient.client.methods.HttpGet;
 import cz.msebera.android.httpclient.client.methods.HttpPost;
 import cz.msebera.android.httpclient.impl.client.HttpClients;
 import cz.msebera.android.httpclient.message.BasicNameValuePair;
@@ -39,7 +35,7 @@ class PostOffice {
     private static final String Server = "http://138.197.213.251/";
     private static final String Chives = Server + "cgi-bin/Chives.py";
     private static final String Chesster = Server + "cgi-bin/Chesster.py";
-    private static final int NETWORK_TIMEOUT_SECS = 10;
+    private static final int NETWORK_TIMEOUT_SECS = 5;
 
     /**
      * Determines which player a user is in a game given the hashes of the player uuids and the users
@@ -335,6 +331,7 @@ class PostOffice {
                     nameValuePairs.add(new BasicNameValuePair(params[i], params[i + 1]));
                 }
                 httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+//                System.out.println(httppost+" "+httppost.getEntity());
                 return httpclient.execute(httppost);
             } catch (Exception e) {
                 e.printStackTrace();

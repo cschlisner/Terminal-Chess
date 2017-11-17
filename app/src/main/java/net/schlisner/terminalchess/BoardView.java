@@ -39,7 +39,7 @@ public class BoardView extends View {
     public BoardView(Context context, AttributeSet attr){
         super(context, attr);
 
-        setBoard(new Board());
+        setBoard(null);
 
         getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
@@ -55,7 +55,7 @@ public class BoardView extends View {
     }
 
     public void setBoard(Board b, boolean updatemoves){
-        this.gameBoard = b;
+        this.gameBoard = (b == null) ? new Board() : new Board(b);
         initTiles();
 
         FontManager.setFont(getContext(), "seguisym.ttf");
@@ -138,11 +138,6 @@ public class BoardView extends View {
                 origin.cx = ox + progress*distx;
                 destination.setCharAlpha((int)((1.0-progress)*255f));
                 BoardView.this.invalidate();
-
-                // TODO: figure out wtf is going on with this
-//                if (move.PROMOTION){
-//                    destination.tile.setOccupator(Piece.synthesizePiece((move.movingPiece.color == Game.Color.BLACK) ? 'Q':'q'));
-//                }
 
                 if (progress == 1.0){
                     origin.animating = false;

@@ -1,7 +1,7 @@
 package uniChess;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
 *	An object representing a chess piece. Pieces hold histories of locations they have been moved to.  
@@ -25,11 +25,15 @@ public class Piece {
 	/** The material value of this piece.*/
 	public double value;
 
+	// TODO: make this into an int
 	/**	The list of locations that this piece has moved to*/
 	public List<Location> moves;
 
-	/** Indicates whether this piece is uner attack*/
+	/** Indicates whether this piece is under attack*/
 	public Move attackingMove = null;
+
+	/** Whether or not this pawn can currently be captured via en passant**/
+	public boolean passable = false;
 
 	/**
 	 * Creates new Piece from single char where uppercase is mapped to black pieces and lowercase
@@ -61,6 +65,7 @@ public class Piece {
 	public Piece(Piece other){
 		this(other.color, other.type);
 		this.moves.addAll(other.moves);
+		this.passable = other.passable;
 	}
 
 	public Piece(Game.Color c, Game.PieceType type){

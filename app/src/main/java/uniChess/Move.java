@@ -1,7 +1,7 @@
 package uniChess;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
 *	An object representing a replacement of one Tile in a Board object with another.
@@ -46,7 +46,7 @@ public class Move{
 	}
 
 	public Board getSimulation(){
-		if (sim == null) sim = this.board.performMove(this);
+		if (sim == null) sim = new Board(board, this);
 		return sim;
 	}
 

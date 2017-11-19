@@ -36,4 +36,8 @@ public class Location {
 		final String row = "12345678";
 		return String.format("%c%c",col.charAt(x),row.charAt(y));
 	}
+
+	public boolean onBoard() {
+		return (x >= 0 && y >= 0 && y < 8 && x < 8);
+	}
 }

@@ -13,9 +13,9 @@ import android.os.HandlerThread;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.transition.Transition;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -26,7 +26,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import uniChess.Chesster;
+import uniChess.C3P0;
 import uniChess.Game;
 import uniChess.Move;
 import uniChess.Player;
@@ -218,10 +218,10 @@ public class GameActivity extends AppCompatActivity {
                             @Override
                             protected void onPostExecute(Void res) {
                                 if (chessGame.getBoardList().size() > 1) {
-                                    boardView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                    getWindow().getSharedElementEnterTransition().addListener(new Transition.TransitionListener() {
                                         @Override
-                                        public void onGlobalLayout() {
-                                            boardView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                                        public void onTransitionStart(Transition transition) {
+                                            getWindow().getSharedElementEnterTransition().removeListener(this);
 
                                             boardView.setBoard(chessGame.getBoardList().get(chessGame.getBoardList().size() - 2));
                                             boardView.animateMove(chessGame.getLastMove(), new PostOffice.MailCallback() {
@@ -235,11 +235,31 @@ public class GameActivity extends AppCompatActivity {
                                                 }
                                             });
                                         }
+
+                                        @Override
+                                        public void onTransitionEnd(Transition transition) {
+
+                                        }
+
+                                        @Override
+                                        public void onTransitionCancel(Transition transition) {
+
+                                        }
+
+                                        @Override
+                                        public void onTransitionPause(Transition transition) {
+
+                                        }
+
+                                        @Override
+                                        public void onTransitionResume(Transition transition) {
+
+                                        }
                                     });
                                 }
                                 else {
                                     boardView.setBoard(chessGame.getCurrentBoard());
-                                    boardView.updateValidMoves();
+                                    boardView.updateValidMoves(chessGame.getCurrentPlayer().color);
                                 }
                                 statusBarUser.setText(!userTurn() ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
                                 drawStatusUser.setVisibility(!userTurn() ? View.INVISIBLE : View.VISIBLE);
@@ -272,10 +292,10 @@ public class GameActivity extends AppCompatActivity {
 //                    userIsWhite = (new Random(System.currentTimeMillis())).nextBoolean();
                     userIsWhite = true;
                     Toast.makeText(getApplicationContext(), String.format("You will be playing as %s", userIsWhite ? "white" : "black"), Toast.LENGTH_SHORT).show();
-                    playerTwo = userIsWhite ? new Chesster<>("BLACK", Game.Color.BLACK)
+                    playerTwo = userIsWhite ? new C3P0<>("BLACK", Game.Color.BLACK)
                             : new Player<>("BLACK", Game.Color.BLACK);
                     playerOne = userIsWhite ? new Player<>("WHITE", Game.Color.WHITE)
-                            : new Chesster<>("WHITE", Game.Color.WHITE);
+                            : new C3P0<>("WHITE", Game.Color.WHITE);
                     updateHandler.postDelayed(gameInitAI, 2);
                     break;
             }
@@ -333,7 +353,7 @@ public class GameActivity extends AppCompatActivity {
         @Override
         public void run() {
             chessGame = new Game(playerOne, playerTwo);
-            boardView.updateValidMoves();
+            boardView.setBoard(chessGame.getCurrentBoard(), true);
             boardView.setOnTouchListener(boardTL);
         }
     };
@@ -343,7 +363,7 @@ public class GameActivity extends AppCompatActivity {
         public void run() {
             chessGame = new Game(playerOne, playerTwo);
             chessGame.logging = true;
-            boardView.updateValidMoves();
+            boardView.setBoard(chessGame.getCurrentBoard(), true);
             boardView.setOnTouchListener(boardTL);
         }
     };
@@ -631,9 +651,7 @@ public class GameActivity extends AppCompatActivity {
                 final Game.GameEvent gameResponse = chessGame.advance(in);
                 System.out.println("Game response: "+gameResponse);
 
-                boardView.setBoard(chessGame.getCurrentBoard());
-                if (opponentType.equals(OPPONENT_LOCAL))
-                    boardView.flipBoard();
+
 
                 deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
                 deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
@@ -642,7 +660,10 @@ public class GameActivity extends AppCompatActivity {
                     case CHECK:
                         Toast.makeText(getApplicationContext(), "Check!", Toast.LENGTH_SHORT).show();
                     case OK:
-                        boardView.updateValidMoves();
+                        boardView.setBoard(chessGame.getCurrentBoard(), true);
+                        if (opponentType.equals(OPPONENT_LOCAL))
+                            boardView.flipBoard();
+//                        boardView.updateValidMoves(chessGame.getCurrentPlayer().color);
                         switch (opponentType){
 
                             case OPPONENT_LOCAL:

@@ -94,7 +94,6 @@ public class Game implements Serializable {
 		black.registerGame(this);
 
 		boards.add(new Board());
-		getCurrentBoard().processLegal();
 	}
 
 	/**

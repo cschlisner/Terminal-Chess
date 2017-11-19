@@ -195,7 +195,7 @@ class PostOffice {
             gameStr += moves.optString(i)+",";
 
         Game g;
-        long t1 = System.currentTimeMillis();
+//        long t1 = System.currentTimeMillis();
 
         if (!gameStr.equals(""))
             g = new Game(new Player<>(whiteID, Game.Color.WHITE), new Player<>(blackID, Game.Color.BLACK), gameStr);

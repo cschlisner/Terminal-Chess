@@ -14,7 +14,7 @@ import java.util.List;
 public class Board {
 
 	/** Board iteration, generated from previous board - same as game move count **/
-	private int iteration;
+	public int iteration;
 
 	private int blackMaterial=0;
 	private int whiteMaterial=0;
@@ -47,6 +47,7 @@ public class Board {
 	 * @param move Move made
 	 */
 	public Board(Board parent, Move move){
+		iteration = parent.iteration + (move==null ? 0 : 1);
 
 		for (int y = 0; y < 8; ++y) {
 			for (int x = 0; x < 8; ++x) {
@@ -95,6 +96,12 @@ public class Board {
 			if (move.materialValue > 0) {
 				addToDeathRow(this.getTile(move.destination).getOccupator());
 			}
+		}
+		else if (iteration>0){
+			// these values have already been calculated and haven't changed
+			if (iteration%2==0)
+				this.legalWhiteMoves = parent.getLegalMoves(Game.Color.WHITE);
+			else this.legalBlackMoves = parent.getLegalMoves(Game.Color.BLACK);
 		}
 	}
 
@@ -395,6 +402,9 @@ public class Board {
 		boolean validMove = false;
 
 		Piece movingPiece = getTile(move.origin).getOccupator();
+		
+		if (!move.destination.onBoard() || !move.origin.onBoard())
+			return false;
 
 		if (movingPiece == null || !getTile(move.destination).available(movingPiece.color) || move.origin.equals(move.destination))
 			return false;
@@ -482,21 +492,80 @@ public class Board {
 	*	@param color The color to gather moves for
 	*	@return The list of moves
 	*/
-	public List<Move> calculateValidMoves(Game.Color color){
+	private List<Move> calculateValidMoves(Game.Color color){
 		List<Move> moves = new ArrayList<>();
 		for (Tile t : getTileList()){
             if (!t.available(color)){
-				/* TODO: instead of checking all available tiles for every piece
-				 *		only check the tiles the piece can possibly move to.
-				 *		-> write different loops for every possible piece type
-				  */
-            	for (Tile u : getTileList()){
-					if (u.available(color)) {
-						Move m = new Move(t.getLocale(), u.getLocale(), this);
-						if (isValidMove(m))
-							moves.add(m);
-					}
-            	}
+				List<Move> m_list = new ArrayList<>();
+				Location ploc = t.getLocale();
+				int direction = color.equals(Game.Color.WHITE) ? 1 : -1;
+				switch (t.getOccupator().type){
+					case PAWN:
+						m_list.add(new Move(ploc, new Location(ploc.x, ploc.y+(direction*2)), this));
+						m_list.add(new Move(ploc, new Location(ploc.x, ploc.y+(direction*1)), this));
+						m_list.add(new Move(ploc, new Location(ploc.x+1, ploc.y+(direction*1)), this));
+						m_list.add(new Move(ploc, new Location(ploc.x-1, ploc.y+(direction*1)), this));
+						break;
+
+					case ROOK:
+						for (int i = 0; i < 7; ++i){
+							if (i != ploc.x)
+								m_list.add(new Move(ploc, new Location(i, ploc.y), this));
+							if (i != ploc.y);
+								m_list.add(new Move(ploc, new Location(ploc.x, i), this));
+						}
+						break;
+
+					case KNIGHT:
+						int[][] pos = {
+								{2, 1},
+								{2, -1},
+								{-2, 1},
+								{-2, -1},
+								{1, 2},
+								{1, -2},
+								{-1, 2},
+								{-1, -2}
+
+						};
+						for (int[] p : pos)
+							m_list.add(new Move(ploc, new Location(ploc.x+p[0], ploc.y+p[1]), this));
+						break;
+
+					case BISHOP:
+						for (int i = 1; i < 8; ++i){
+							m_list.add(new Move(ploc, new Location(ploc.x+i, ploc.y+i), this));
+							m_list.add(new Move(ploc, new Location(ploc.x+i, ploc.y-i), this));
+							m_list.add(new Move(ploc, new Location(ploc.x-i, ploc.y+i), this));
+							m_list.add(new Move(ploc, new Location(ploc.x-i, ploc.y-i), this));
+						}
+						break;
+
+					case QUEEN:
+						for (int i = 0, j= 1; i < 7; ++i, ++j){
+							if (i != ploc.x)
+								m_list.add(new Move(ploc, new Location(i, ploc.y), this));
+							if (i != ploc.y);
+								m_list.add(new Move(ploc, new Location(ploc.x, i), this));
+							
+							m_list.add(new Move(ploc, new Location(ploc.x+j, ploc.y+j), this));
+							m_list.add(new Move(ploc, new Location(ploc.x+j, ploc.y-j), this));
+							m_list.add(new Move(ploc, new Location(ploc.x-j, ploc.y+j), this));
+							m_list.add(new Move(ploc, new Location(ploc.x-j, ploc.y-j), this));
+						}
+						break;
+
+					case KING:
+						for (int i = 0; i < 3; ++i)
+							for (int j = 0; j < 3; ++j)
+								m_list.add(new Move(ploc, new Location(ploc.x-1+i, ploc.y+1-j), this));
+						break;
+				}
+				for (Move move : m_list){
+					if (isValidMove(move))
+						moves.add(move);
+				}
+
             }
 		}
 		return moves;
@@ -548,7 +617,7 @@ public class Board {
 	public List<Move> calculateLegalMoves(Game.Color c){
 		List<Move> validMoves = getValidMoves(c);
 		List<Move> legalMoves = new ArrayList<>();
-
+		//long t1 = System.currentTimeMillis();
 		for (Move m : validMoves){
 			if (!Board.playerHasCheck(new Board(this, m), Game.getOpposite(c))) {
 				legalMoves.add(m);
@@ -557,6 +626,7 @@ public class Board {
 				getTile(m.destination).getOccupator().attackingMove = null;
 			}
 		}
+		//System.out.println("Calculated legal in "+(System.currentTimeMillis() - t1)+"ms");
 
 		return legalMoves;
 	}
@@ -592,8 +662,7 @@ public class Board {
 	*	
 	*/
 	public void processLegal(){
-		getLegalMoves(Game.Color.WHITE);
-		getLegalMoves(Game.Color.BLACK);
+		getLegalMoves(iteration % 2 == 0 ? Game.Color.WHITE : Game.Color.BLACK);
 	}
 
 	/**

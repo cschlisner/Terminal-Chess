@@ -54,6 +54,14 @@ public class MenuActivity extends AppCompatActivity {
             editor.apply();
             uuidView.setText(uuid);
         }
+
+        uuidView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Toast.makeText(getApplicationContext(), "User ID - long-press to assume new ID", Toast.LENGTH_SHORT).show();
+            }
+        });
+
         uuidView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
@@ -84,6 +92,27 @@ public class MenuActivity extends AppCompatActivity {
                 AlertDialog ad = adbuilder.create();
                 ad.show();
                 return true;
+            }
+        });
+
+        score_w.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Toast.makeText(getApplicationContext(), "Matches Won", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        score_l.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Toast.makeText(getApplicationContext(), "Matches Lost", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        score_d.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Toast.makeText(getApplicationContext(), "Matches Drawn", Toast.LENGTH_SHORT).show();
             }
         });
 

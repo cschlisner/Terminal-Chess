@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -45,7 +44,7 @@
         android:layout_centerHorizontal="true"
         android:background="@drawable/ripple"
         android:onClick="joinGame"
-        android:text="-> Join Game"
+        android:text="-> Join Match"
         android:textAllCaps="false"
         android:textColor="@color/chessBoardHighlight"
         android:textStyle="bold|italic"
@@ -76,7 +75,7 @@
         android:layout_marginBottom="47dp"
         android:background="@drawable/ripple"
         android:onClick="createGame"
-        android:text="-> Create Game"
+        android:text="-> Create Match"
         android:textAllCaps="false"
         android:textColor="@color/chessBoardHighlight"
         android:textStyle="bold|italic"
@@ -137,6 +136,6 @@
         android:checked="false"
         android:text="Public"
         android:textColor="@color/chessBoardBorder"
-        app:buttonTint="@color/chessBoardBorder" />
+        android:buttonTint="@color/chessBoardBorder" />
 
 </RelativeLayout>

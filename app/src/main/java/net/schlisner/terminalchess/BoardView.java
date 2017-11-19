@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uniChess.Board;
+import uniChess.Game;
 import uniChess.Location;
 import uniChess.Move;
 import uniChess.Player;
@@ -44,7 +45,7 @@ public class BoardView extends View {
         getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
-//                getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                getViewTreeObserver().removeOnGlobalLayoutListener(this);
                 tileDim = (((float)getWidth()-4) / 8.0f);
             }
         });
@@ -60,10 +61,10 @@ public class BoardView extends View {
 
         FontManager.setFont(getContext(), "seguisym.ttf");
         if (updatemoves) {
-            updateValidMoves();
+            updateValidMoves(b.iteration %2==0 ? Game.Color.WHITE : Game.Color.BLACK);
         }
 
-        invalidate();
+        //invalidate();
     }
 
     private void initTiles() {
@@ -138,6 +139,7 @@ public class BoardView extends View {
                 origin.cx = ox + progress*distx;
                 destination.setCharAlpha((int)((1.0-progress)*255f));
                 BoardView.this.invalidate();
+
 
                 if (progress == 1.0){
                     origin.animating = false;
@@ -247,11 +249,11 @@ public class BoardView extends View {
                 td.monochrome = isIcon;
     }
 
-    public void updateValidMoves(){
+    public void updateValidMoves(Game.Color color){
         List<TileDisplay> validDestinations = new ArrayList<>();
         for (TileDisplay[] tda : tileDisplays){
             for (TileDisplay td : tda){
-                if (td.tile.getOccupator() != null){
+                if (td.tile.getOccupator() != null && !td.tile.available(color)){
                     validDestinations.clear();
                     for (Move move : gameBoard.getLegalMoves(td.tile.getOccupator().color))
                         if (move.origin.equals(td.tile.getLocale()))

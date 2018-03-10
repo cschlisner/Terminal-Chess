@@ -3,7 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Terminal-Chess.iml" filepath="$PROJECT_DIR$/Terminal-Chess.iml" />
-      <module fileurl="file://$PROJECT_DIR$/TerminalChess.iml" filepath="$PROJECT_DIR$/TerminalChess.iml" />
+      <module fileurl="file://C:\Users\coles\StudioProjects\Terminal-Chess\TerminalChess.iml" filepath="C:\Users\coles\StudioProjects\Terminal-Chess\TerminalChess.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>

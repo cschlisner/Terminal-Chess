@@ -25,9 +25,8 @@ public class Piece {
 	/** The material value of this piece.*/
 	public double value;
 
-	// TODO: make this into an int
-	/**	The list of locations that this piece has moved to*/
-	public List<Location> moves;
+	/**	The amount of times this piece has moved*/
+	public int moves = 0;
 
 	/** Indicates whether this piece is under attack*/
 	public Move attackingMove = null;
@@ -64,14 +63,13 @@ public class Piece {
 
 	public Piece(Piece other){
 		this(other.color, other.type);
-		this.moves.addAll(other.moves);
+		this.moves = other.moves;
 		this.passable = other.passable;
 	}
 
 	public Piece(Game.Color c, Game.PieceType type){
 		this.type = type;
 		this.color = c;
-		this.moves = new ArrayList<>();
 
 		int[] unicodeChars;
 

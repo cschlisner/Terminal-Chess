@@ -70,10 +70,13 @@ public class Board {
 		this.deathRow.addAll(parent.deathRow);
 
 		if (move != null){
+
+			// make the move
 			this.moveOccupator(move.origin, move.destination);
 
+			// set passable status (able to be en-passanted) of pawn if it's the pawns first move
 			if (move.movingPiece.ofType(Game.PieceType.PAWN) &&
-					move.movingPiece.moves.size()==0){
+					move.movingPiece.moves==0){
 				int dx = move.destination.x - move.origin.x;
 				int dy = (move.movingPiece.color.equals(Game.Color.WHITE) ? 1 : -1) * (move.destination.y - move.origin.y);
 				getTile(move.destination).getOccupator().passable = (dy == 2 && dx == 0);
@@ -94,7 +97,7 @@ public class Board {
 			}
 
 			if (move.materialValue > 0) {
-				addToDeathRow(this.getTile(move.destination).getOccupator());
+				addToDeathRow(parent.getTile(move.destination).getOccupator());
 			}
 		}
 		else if (iteration>0){
@@ -422,7 +425,7 @@ public class Board {
 				Piece enpasse = (dy == 1 && (dy + dx == 0 || dy + dx == 2)) ? getTile(move.origin.x+dx, move.origin.y).getOccupator() : null;
 				move.PROMOTION = (move.destination.y == (movingPiece.color.equals(Game.Color.WHITE) ? 7 : 0));
 				if ((dy == 1 && dx == 0 && !enemy)
-					|| (movingPiece.moves.size()==0 && dy == 2 && dx == 0 && cardinalLineOfSightClear(move.origin, move.destination) && !enemy) 
+					|| (movingPiece.moves==0 && dy == 2 && dx == 0 && cardinalLineOfSightClear(move.origin, move.destination) && !enemy)
 					|| (dy == 1 && (dy + dx == 0 || dy + dx == 2) && enemy)){
 					validMove = true;
 					break;
@@ -456,17 +459,22 @@ public class Board {
 				break;
 			
 			case KING:	
-				if (movingPiece.moves.isEmpty() && Math.abs(dx) == 2 && dy == 0){
+				if (movingPiece.moves==0 && Math.abs(dx) == 2 && dy == 0){
 					if (dx > 0){
 						Piece castleRook = getTile(move.origin.x+3, move.origin.y).getOccupator();
+
+						// TODO: add logic to check if the king crosses over a square in which it would be in check
 						if (cardinalLineOfSightClear(move.origin, new Location(move.origin.x+3, move.origin.y)) &&
-						 	castleRook != null && castleRook.type.equals(Game.PieceType.ROOK) && castleRook.moves.isEmpty())
+						 	castleRook != null && castleRook.type.equals(Game.PieceType.ROOK) && castleRook.moves==0)
 							move.KCASTLE = true;
 					}
 					else {
 						Piece castleRook = getTile(move.origin.x-4, move.origin.y).getOccupator();
+
+						// TODO: add logic to check if the king crosses over a square in which it would be in check
+						// TODO: cardinal line of sight clear is broke here
 						if (cardinalLineOfSightClear(move.origin, new Location(move.origin.x-4, move.origin.y)) &&
-							castleRook != null && castleRook.type.equals(Game.PieceType.ROOK) && castleRook.moves.isEmpty())
+							castleRook != null && castleRook.type.equals(Game.PieceType.ROOK) && castleRook.moves==0)
 							move.QCASTLE = true;
 					}
 					validMove = true;
@@ -526,7 +534,6 @@ public class Board {
 								{1, -2},
 								{-1, 2},
 								{-1, -2}
-
 						};
 						for (int[] p : pos)
 							m_list.add(new Move(ploc, new Location(ploc.x+p[0], ploc.y+p[1]), this));
@@ -559,13 +566,17 @@ public class Board {
 						for (int i = 0; i < 3; ++i)
 							for (int j = 0; j < 3; ++j)
 								m_list.add(new Move(ploc, new Location(ploc.x-1+i, ploc.y+1-j), this));
+						// potential castling moves
+						if (t.getOccupator().moves == 0){
+							m_list.add(new Move(ploc, new Location(ploc.x+2, ploc.y), this));
+							m_list.add(new Move(ploc, new Location(ploc.x-2, ploc.y), this));
+						}
 						break;
 				}
 				for (Move move : m_list){
 					if (isValidMove(move))
 						moves.add(move);
 				}
-
             }
 		}
 		return moves;
@@ -688,7 +699,7 @@ public class Board {
 	private void moveOccupator(Location a, Location b){
 		getTile(b).setOccupator(getTile(a).getOccupator());
 
-		getTile(a).getOccupator().moves.add(b);
+		++ getTile(a).getOccupator().moves;
 
 		getTile(a).setOccupator(null);
 	}

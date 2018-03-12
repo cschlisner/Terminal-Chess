@@ -268,7 +268,7 @@ public class Board {
 		 max = (String.valueOf(el).length() > max)?String.valueOf(el).length():max;
 		return max;
     }
-	private String getBoardString(){
+	public String getBoardString(){
 		return getBoardString("","");
 	}
 	private String getBoardString(Player whiten, Player blackn){
@@ -331,7 +331,8 @@ public class Board {
 
 		int dir = (((v)?b.y:b.x) < ((v)?a.y:a.x))?1:-1;
 		for (int i = ((v)?b.y:b.x)+dir; i != ((v)?a.y:a.x); i += dir){
-			if (getTile((v)?a.x:i, (v)?i:a.y).occupator != null)
+			Tile t = getTile((v)?a.x:i, (v)?i:a.y);
+			if (t.occupator != null)
 				return false;
 		}
 		return true;
@@ -467,6 +468,10 @@ public class Board {
 						if (cardinalLineOfSightClear(move.origin, new Location(move.origin.x+3, move.origin.y)) &&
 						 	castleRook != null && castleRook.type.equals(Game.PieceType.ROOK) && castleRook.moves==0)
 							move.KCASTLE = true;
+						else {
+							validMove = false;
+							break;
+						}
 					}
 					else {
 						Piece castleRook = getTile(move.origin.x-4, move.origin.y).getOccupator();
@@ -476,6 +481,10 @@ public class Board {
 						if (cardinalLineOfSightClear(move.origin, new Location(move.origin.x-4, move.origin.y)) &&
 							castleRook != null && castleRook.type.equals(Game.PieceType.ROOK) && castleRook.moves==0)
 							move.QCASTLE = true;
+						else {
+							validMove = false;
+							break;
+						}
 					}
 					validMove = true;
 					break;
@@ -516,10 +525,10 @@ public class Board {
 						break;
 
 					case ROOK:
-						for (int i = 0; i < 7; ++i){
+						for (int i = 0; i < 8; ++i){
 							if (i != ploc.x)
 								m_list.add(new Move(ploc, new Location(i, ploc.y), this));
-							if (i != ploc.y);
+							if (i != ploc.y)
 								m_list.add(new Move(ploc, new Location(ploc.x, i), this));
 						}
 						break;
@@ -709,14 +718,12 @@ public class Board {
 	}
 
 	/**
-	*	Returns a String representation of the board, oriented so the current player is 
-	*	on the bottom, using the Game setting for unicode.
-	*	
-	*	@return The string representation of this board
-	*/
+	 * Returns the board iteration number, and which color has the move.
+	 * @return Board iteration
+	 */
 	@Override
 	public String toString(){
-		return getBoardString();
+		return "Board#"+String.valueOf(iteration)+":"+(iteration%2==0 ? "White":"Black")+" to move.";
 	}
 
 	public void print(Player one, Player two){

@@ -13,27 +13,9 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/joinLobby"
-        android:id="@+id/frameLayout2">
-
-    </FrameLayout>
-
-
-    <Button
-        android:id="@+id/joinLobby"
-        style="@style/Widget.AppCompat.Button.Borderless"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
         android:layout_above="@+id/joinGame"
-        android:layout_centerHorizontal="true"
-        android:background="@drawable/ripple"
-        android:elevation="15dp"
-        android:onClick="instantMatch"
-        android:text="-> Instant Match"
-        android:textAllCaps="false"
-        android:textColor="@color/chessBoardHighlight"
-        android:textStyle="bold|italic"
-        android:typeface="monospace" />
+        android:id="@+id/frameLayout2">
+    </FrameLayout>
 
     <Button
         android:id="@+id/joinGame"
@@ -44,7 +26,7 @@
         android:layout_centerHorizontal="true"
         android:background="@drawable/ripple"
         android:onClick="joinGame"
-        android:text="-> Join Match"
+        android:text="@string/JoinMatch"
         android:textAllCaps="false"
         android:textColor="@color/chessBoardHighlight"
         android:textStyle="bold|italic"
@@ -60,7 +42,7 @@
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="71dp"
         android:onClick="startGame"
-        android:text="START GAME"
+        android:text="@string/StartMatch"
         android:textColor="@color/chessBoardHighlight"
         android:typeface="monospace"
         android:visibility="visible" />
@@ -75,7 +57,7 @@
         android:layout_marginBottom="47dp"
         android:background="@drawable/ripple"
         android:onClick="createGame"
-        android:text="-> Create Match"
+        android:text="@string/CreateMatch"
         android:textAllCaps="false"
         android:textColor="@color/chessBoardHighlight"
         android:textStyle="bold|italic"
@@ -129,13 +111,13 @@
         android:id="@+id/checkBoxPublic"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/createGameBtn"
         android:layout_alignBottom="@+id/createGameBtn"
-        android:layout_alignTop="@+id/createGameBtn"
-        android:layout_marginStart="9dp"
-        android:layout_toEndOf="@+id/joinLobby"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="10dp"
+        android:buttonTint="@color/chessBoardBorder"
         android:checked="false"
-        android:text="Public"
-        android:textColor="@color/chessBoardBorder"
-        android:buttonTint="@color/chessBoardBorder" />
+        android:text="@string/PublicMatch"
+        android:textColor="@color/chessBoardBorder" />
 
 </RelativeLayout>

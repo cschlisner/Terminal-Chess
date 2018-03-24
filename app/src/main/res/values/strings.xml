@@ -9,4 +9,8 @@
     <string name="transition_boardview">BoardViewTransition</string>
     <string name="transition_statusbar">StatusTransition</string>
     <string name="transition_boardIntoPB">BoardIntoProgressBar</string>
+    <string name="StartMatch">START MATCH</string>
+    <string name="JoinMatch">-> join match</string>
+    <string name="CreateMatch">-> create match</string>
+    <string name="PublicMatch">public</string>
 </resources>

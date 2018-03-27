@@ -13,4 +13,5 @@
     <string name="JoinMatch">-> join match</string>
     <string name="CreateMatch">-> create match</string>
     <string name="PublicMatch">public</string>
+    <string name="PublicMatchListHeader">public matches:</string>
 </resources>

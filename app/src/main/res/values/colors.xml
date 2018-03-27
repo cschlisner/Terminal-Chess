@@ -10,4 +10,5 @@
     <color name="chessBoardCapture">#ff0022</color>
     <color name="chessPiecesDark">#00740c</color>
     <color name="chessPiecesLight">#00740c</color>
+    <color name="uiTextView">#00da17</color>
 </resources>

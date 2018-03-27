@@ -9,14 +9,8 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.ActivityOptionsCompat;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.text.method.KeyListener;
-import android.view.KeyEvent;
+import android.text.InputType;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.AdapterView;
@@ -40,7 +34,6 @@ public class NetworkGameMenu extends AppCompatActivity {
     Button joinGameBtn;
     Button createGameBtn;
     Button startGameBtn;
-    TextView gameID;
     EditText gameIDInput;
     CheckBox publicGame;
 
@@ -66,10 +59,10 @@ public class NetworkGameMenu extends AppCompatActivity {
         joinGameBtn = (Button)findViewById(R.id.joinGame);
         createGameBtn = (Button)findViewById(R.id.createGameBtn);
 
-        gameID = (TextView) findViewById(R.id.gameUUIDTV);
-        gameID.setVisibility(View.INVISIBLE);
 
-        gameID.setOnLongClickListener(new View.OnLongClickListener() {
+
+        gameIDInput = (EditText) findViewById(R.id.gameUUIDET);
+        gameIDInput.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
                 ClipboardManager clipboard = (ClipboardManager)
@@ -80,9 +73,6 @@ public class NetworkGameMenu extends AppCompatActivity {
                 return false;
             }
         });
-
-        gameIDInput = (EditText) findViewById(R.id.gameUUIDET);
-        gameIDInput.setVisibility(View.INVISIBLE);
 
         startGameBtn = (Button)findViewById(R.id.startGame);
         startGameBtn.setVisibility(View.INVISIBLE);
@@ -108,6 +98,13 @@ public class NetworkGameMenu extends AppCompatActivity {
         ht = new HandlerThread("networkupdate");
         ht.start();
         updateHandler = new Handler(ht.getLooper());
+        updateHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                refreshList();
+            }
+        });
+
 
     }
 
@@ -132,25 +129,16 @@ public class NetworkGameMenu extends AppCompatActivity {
 
     public void joinGame(View v){
         gameIDInput.setText("");
-        gameID.setVisibility(View.INVISIBLE);
-        gameIDInput.setVisibility(View.VISIBLE);
+        gameIDInput.setInputType(InputType.TYPE_CLASS_NUMBER);
         startGameBtn.setVisibility(View.VISIBLE);
         gameList.setVisibility(View.VISIBLE);
 
-        updateHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                refreshList();
-            }
-        });
     }
 
-    private JSONObject createdGame;
+    private JSONObject createdGame = null;
     public void createGame(View v){
-        gameID.setVisibility(View.VISIBLE);
-        gameIDInput.setVisibility(View.INVISIBLE);
+        gameIDInput.setInputType(InputType.TYPE_NULL);
         startGameBtn.setVisibility(View.VISIBLE);
-        gameList.setVisibility(View.INVISIBLE);
         final Activity context = this;
         PostOffice.createGame(uuid, publicGame.isChecked(), new PostOffice.MailCallback() {
             @Override
@@ -162,10 +150,11 @@ public class NetworkGameMenu extends AppCompatActivity {
             public void after(String s) {
                 try {
                     createdGame = new JSONObject(s);
-                    gameID.setText(createdGame.getString("id"));
+                    gameIDInput.setText(createdGame.getString("id"));
                     Toast.makeText(getApplicationContext(), "Long-press Game ID to copy", Toast.LENGTH_SHORT).show();
                 } catch (Exception e){
                     e.printStackTrace();
+                    createdGame = null;
                     Toast.makeText(getApplicationContext(), "Could not create game.", Toast.LENGTH_SHORT).show();
                     startGameBtn.setVisibility(View.INVISIBLE);
                 }
@@ -173,7 +162,7 @@ public class NetworkGameMenu extends AppCompatActivity {
         });
     }
     public void startGame(View v){
-        if (gameID.getVisibility() == View.VISIBLE && createdGame != null){
+        if (createdGame != null){
             Intent i = new Intent(this, GameActivity.class);
             i.putExtra("uuid", uuid);
             i.putExtra("opponent", GameActivity.OPPONENT_NETWORK);

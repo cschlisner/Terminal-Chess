@@ -1,9 +1,6 @@
 package net.schlisner.terminalchess;
 
 import android.app.Activity;
-import android.content.ClipData;
-import android.content.ClipboardManager;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -18,7 +15,6 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONArray;
@@ -34,8 +30,8 @@ public class NetworkGameMenu extends AppCompatActivity {
     Button joinGameBtn;
     Button createGameBtn;
     Button startGameBtn;
-    EditText gameIDInput;
     CheckBox publicGame;
+    EditText gameIDInput;
 
     ListView gameList;
     List<JSONObject> gamesJSONList;
@@ -58,26 +54,12 @@ public class NetworkGameMenu extends AppCompatActivity {
 
         joinGameBtn = (Button)findViewById(R.id.joinGame);
         createGameBtn = (Button)findViewById(R.id.createGameBtn);
-
-
+        publicGame = (CheckBox) findViewById(R.id.publicGame);
 
         gameIDInput = (EditText) findViewById(R.id.gameUUIDET);
-        gameIDInput.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                ClipboardManager clipboard = (ClipboardManager)
-                        getSystemService(Context.CLIPBOARD_SERVICE);
-                ClipData clip = ClipData.newPlainText("simple text", ((TextView)v).getText());
-                clipboard.setPrimaryClip(clip);
-                Toast.makeText(getApplicationContext(), "Game ID copied to clipboard", Toast.LENGTH_SHORT).show();
-                return false;
-            }
-        });
 
         startGameBtn = (Button)findViewById(R.id.startGame);
         startGameBtn.setVisibility(View.INVISIBLE);
-
-        publicGame = (CheckBox) findViewById(R.id.checkBoxPublic);
 
         gameList = (ListView)findViewById(R.id.lobby_gameListView);
 
@@ -129,7 +111,7 @@ public class NetworkGameMenu extends AppCompatActivity {
 
     public void joinGame(View v){
         gameIDInput.setText("");
-        gameIDInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+        gameIDInput.setVisibility(View.VISIBLE);
         startGameBtn.setVisibility(View.VISIBLE);
         gameList.setVisibility(View.VISIBLE);
 
@@ -151,7 +133,7 @@ public class NetworkGameMenu extends AppCompatActivity {
                 try {
                     createdGame = new JSONObject(s);
                     gameIDInput.setText(createdGame.getString("id"));
-                    Toast.makeText(getApplicationContext(), "Long-press Game ID to copy", Toast.LENGTH_SHORT).show();
+                    gameIDInput.selectAll();
                 } catch (Exception e){
                     e.printStackTrace();
                     createdGame = null;

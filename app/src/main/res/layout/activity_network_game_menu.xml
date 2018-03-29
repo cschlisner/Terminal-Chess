@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -8,116 +8,136 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
+    android:orientation="vertical"
     tools:context=".NetworkGameMenu">
 
-    <FrameLayout
+    <TextView
+        android:id="@+id/textView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/joinGame"
-        android:id="@+id/frameLayout2">
-    </FrameLayout>
+        android:layout_weight="1"
+        android:text="@string/PublicMatchListHeader"
+        android:textAlignment="center"
+        android:textColor="@color/uiTextView" />
 
-    <Button
-        android:id="@+id/joinGame"
-        style="@style/Widget.AppCompat.Button.Borderless"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/createGameBtn"
-        android:layout_centerHorizontal="true"
-        android:background="@drawable/ripple"
-        android:onClick="joinGame"
-        android:text="@string/JoinMatch"
-        android:textAllCaps="false"
-        android:textColor="@color/chessBoardHighlight"
-        android:textStyle="bold|italic"
-        android:typeface="monospace" />
-
-    <Button
-        android:id="@+id/startGame"
-        style="@style/Widget.AppCompat.Button.Borderless"
-        android:layout_width="wrap_content"
-        android:background="@drawable/ripple"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="71dp"
-        android:onClick="startGame"
-        android:text="@string/StartMatch"
-        android:textColor="@color/chessBoardHighlight"
-        android:typeface="monospace"
+    <ListView
+        android:id="@+id/lobby_gameListView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="fill_vertical"
+        android:layout_marginBottom="5dp"
+        android:layout_weight="40"
+        android:background="@color/colorPrimary"
+        android:dividerHeight="10dp"
+        android:listSelector="@drawable/ripple"
         android:visibility="visible" />
 
-    <Button
-        android:id="@+id/createGameBtn"
-        style="@style/Widget.AppCompat.Button.Borderless"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <Button
+            android:id="@+id/joinGame"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="wrap_content"
+            android:layout_height="27dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="10dp"
+            android:layout_marginTop="10dp"
+            android:layout_weight="2"
+            android:gravity="end"
+            android:background="@drawable/ripple"
+            android:onClick="joinGame"
+            android:text="@string/JoinMatch"
+            android:textAllCaps="false"
+            android:textColor="@color/uiTextView"
+            android:textStyle="bold|italic"
+            android:typeface="monospace" />
+        <CheckBox
+            android:id="@+id/placeholder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:layout_weight="1"
+            android:buttonTint="@color/chessPiecesDark"
+            android:fontFamily="monospace"
+            android:text="@string/PublicMatch"
+            android:textColor="@color/chessPiecesLight"
+            android:visibility="invisible"/>
+    </LinearLayout>
+
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/gameUUIDET"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="47dp"
-        android:background="@drawable/ripple"
-        android:onClick="createGame"
-        android:text="@string/CreateMatch"
-        android:textAllCaps="false"
-        android:textColor="@color/chessBoardHighlight"
-        android:textStyle="bold|italic"
-        android:typeface="monospace"
-        android:visibility="visible" />
+        android:orientation="horizontal"
+        android:layout_gravity="center_horizontal">
+
+        <Button
+            android:id="@+id/createGameBtn"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="wrap_content"
+            android:layout_height="33dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="5dp"
+            android:layout_marginEnd="10dp"
+            android:layout_weight="2"
+            android:background="@drawable/ripple"
+            android:gravity="end"
+            android:onClick="createGame"
+            android:paddingTop="10dp"
+            android:text="@string/CreateMatch"
+            android:textAllCaps="false"
+            android:textColor="@color/uiTextView"
+            android:textStyle="bold|italic"
+            android:typeface="monospace"
+            android:visibility="visible" />
+
+        <CheckBox
+            android:id="@+id/publicGame"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:layout_weight="1"
+            android:buttonTint="@color/chessPiecesDark"
+            android:fontFamily="monospace"
+            android:text="@string/PublicMatch"
+            android:textColor="@color/chessPiecesLight" />
+    </LinearLayout>
+
 
     <EditText
         android:id="@+id/gameUUIDET"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/startGame"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="30dp"
+        android:layout_marginBottom="10dp"
+        android:layout_marginTop="10dp"
+        android:layout_weight="1"
         android:background="@color/chessBoardDark"
         android:ems="10"
-        android:hint="uuid"
+        android:hint="@string/uuidHint"
         android:inputType="textPersonName"
         android:selectAllOnFocus="true"
         android:textAlignment="center"
         android:textColor="@color/chessBoardHighlight"
         android:textColorHint="@color/chessBoardBorder"
-        android:textColorLink="@color/chessBoardDark"
+        android:textColorLink="@color/uiTextView"
         android:textSize="14sp"
         android:typeface="monospace"
         android:visibility="invisible" />
 
-    <TextView
-        android:id="@+id/gameUUIDTV"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignBottom="@+id/gameUUIDET"
-        android:layout_alignEnd="@+id/gameUUIDET"
-        android:layout_alignStart="@+id/gameUUIDET"
-        android:layout_alignTop="@+id/gameUUIDET"
-        android:textAlignment="center"
-        android:textAllCaps="false"
-        android:textColor="@color/chessBoardHighlight"
-        android:typeface="monospace" />
-
-    <ListView
-        android:id="@+id/lobby_gameListView"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:background="@color/colorPrimary"
-        android:dividerHeight="10dp"
-        android:listSelector="@drawable/ripple"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentStart="true" />
-
-    <CheckBox
-        android:id="@+id/checkBoxPublic"
+    <Button
+        android:id="@+id/startGame"
+        style="@style/Widget.AppCompat.Button.Borderless"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignBaseline="@+id/createGameBtn"
-        android:layout_alignBottom="@+id/createGameBtn"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="10dp"
-        android:buttonTint="@color/chessBoardBorder"
-        android:checked="false"
-        android:text="@string/PublicMatch"
-        android:textColor="@color/chessBoardBorder" />
+        android:layout_gravity="center"
+        android:layout_weight="1"
+        android:background="@drawable/ripple"
+        android:onClick="startGame"
+        android:text="@string/StartMatch"
+        android:textColor="@color/uiTextView"
+        android:typeface="monospace"
+        android:visibility="visible" />
 
-</RelativeLayout>
+</LinearLayout>

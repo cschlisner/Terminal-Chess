@@ -137,7 +137,7 @@ public class NetworkGameMenu extends AppCompatActivity {
                 } catch (Exception e){
                     e.printStackTrace();
                     createdGame = null;
-                    Toast.makeText(getApplicationContext(), "Could not create game.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), "Could not create match.", Toast.LENGTH_SHORT).show();
                     startGameBtn.setVisibility(View.INVISIBLE);
                 }
             }
@@ -157,7 +157,7 @@ public class NetworkGameMenu extends AppCompatActivity {
             String gameUUID = gameIDInput.getText().toString();
 
             if (gameUUID.isEmpty()){
-                Toast.makeText(this, "Enter Valid Game ID", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Enter Valid Match ID", Toast.LENGTH_SHORT).show();
                 return;
             }
             final Activity context = this;
@@ -172,7 +172,7 @@ public class NetworkGameMenu extends AppCompatActivity {
                     try {
                         JSONObject join = new JSONObject(s);
                         if (s.equals("ERR_GAME_FULL")) {
-                            Toast.makeText(getApplicationContext(), "Game is full.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getApplicationContext(), "Match is full.", Toast.LENGTH_SHORT).show();
                         }
                         else {
                             Intent i = new Intent(context, GameActivity.class);
@@ -185,7 +185,7 @@ public class NetworkGameMenu extends AppCompatActivity {
                         }
                     } catch (Exception e){
                         e.printStackTrace();
-                        Toast.makeText(getApplicationContext(), "Could not join game.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), "Could not join match.", Toast.LENGTH_SHORT).show();
                     }
                 }
             });

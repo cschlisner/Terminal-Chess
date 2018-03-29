@@ -131,7 +131,6 @@ public class MenuActivity extends AppCompatActivity {
     public void startNewNetworkGame(View view){
         Intent i = new Intent(this, NetworkGameMenu.class);
         startActivity(i);
-        finish();
     }
 
     // start local game

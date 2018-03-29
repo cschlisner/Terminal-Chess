@@ -24,7 +24,7 @@
         android:onClick="startNewNetworkGame"
         android:text="-> Network Match"
         android:textAllCaps="false"
-        android:textColor="@color/chessBoardHighlight"
+        android:textColor="@color/uiTextView"
         android:textStyle="italic"
         android:typeface="monospace" />
 
@@ -37,7 +37,7 @@
         android:elevation="0dp"
         android:onClick="resumeGame"
         android:text="Resume Match"
-        android:textColor="@color/chessBoardHighlight"
+        android:textColor="@color/uiTextView"
         android:layout_above="@+id/button2"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="75dp" />
@@ -52,7 +52,7 @@
         android:onClick="startNewLocalGame"
         android:text="-> Local Match"
         android:textAllCaps="false"
-        android:textColor="@color/chessBoardHighlight"
+        android:textColor="@color/uiTextView"
         android:textStyle="italic"
         android:typeface="monospace" />
 
@@ -67,7 +67,7 @@
         android:onClick="startNewAIGame"
         android:text="-> AI Match"
         android:textAllCaps="false"
-        android:textColor="@color/chessBoardHighlight"
+        android:textColor="@color/uiTextView"
         android:textStyle="italic"
         android:typeface="monospace" />
 
@@ -79,7 +79,7 @@
         android:layout_centerHorizontal="true"
         android:fontFamily="serif-monospace"
         android:textAlignment="center"
-        android:textColor="@color/chessBoardHighlight"
+        android:textColor="@color/uiTextView"
         android:textSize="14sp"
         android:typeface="monospace" />
 
@@ -90,7 +90,7 @@
         android:layout_marginTop="53dp"
         android:text="6"
         android:textAllCaps="true"
-        android:textColor="@color/chessBoardBorder"
+        android:textColor="@color/uiTextView"
         android:textStyle="bold"
         android:layout_below="@+id/uuidView"
         android:layout_alignStart="@+id/button" />
@@ -101,7 +101,7 @@
         android:layout_height="wrap_content"
         android:text="6"
         android:textAllCaps="true"
-        android:textColor="@color/chessBoardBorder"
+        android:textColor="@color/uiTextView"
         android:textStyle="bold"
         android:layout_alignBaseline="@+id/score_draws"
         android:layout_alignBottom="@+id/score_draws"
@@ -113,7 +113,7 @@
         android:layout_height="wrap_content"
         android:text="6"
         android:textAllCaps="true"
-        android:textColor="@color/chessBoardBorder"
+        android:textColor="@color/uiTextView"
         android:textStyle="bold"
         android:layout_alignBaseline="@+id/score_wins"
         android:layout_alignBottom="@+id/score_wins"

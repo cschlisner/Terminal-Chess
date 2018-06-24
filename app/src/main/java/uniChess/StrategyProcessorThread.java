@@ -1,10 +1,8 @@
 package uniChess;
 
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
-
-import java.lang.Thread;
+import java.util.List;
 
 public class StrategyProcessorThread extends Thread {
     
@@ -111,7 +109,7 @@ public class StrategyProcessorThread extends Thread {
             SmartMove olsm = new SmartMove(olm);
             opponentSorted.add(olsm);
             if (olm.destination.equals(m.destination))
-                m.tacticalValue = -1.0*m.movingPiece.value;
+                m.tacticalValue = -1.0*m.piece.value;
             if (olm.materialValue > potCaptureVal)
                 potCaptureVal = olm.materialValue;
         }

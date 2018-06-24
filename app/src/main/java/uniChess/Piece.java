@@ -1,15 +1,12 @@
 package uniChess;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
 *	An object representing a chess piece. Pieces hold histories of locations they have been moved to.  
 */
 public class Piece {
 
 	/**	The Color of the Piece*/
-	public Game.Color color;
+	public int color;
 	
 	/**	The unicode representation of the Piece*/
 	public String unicodeSymbol;
@@ -20,7 +17,7 @@ public class Piece {
 	/**	
 	*The {@code PieceType} of this Piece
 	*/
-	public Game.PieceType type;
+	public Piece.Type type;
 	
 	/** The material value of this piece.*/
 	public double value;
@@ -40,22 +37,22 @@ public class Piece {
 	 * @param character
 	 */
 	public static Piece synthesizePiece(char character){
-		Game.Color color = Game.Color.WHITE;
+		int color = Color.WHITE;
 		if (Character.isUpperCase(character))
-			color = Game.Color.BLACK;
+			color = Color.BLACK;
 		switch (Character.toLowerCase(character)) {
 			case 'p':
-				return new Piece(color, Game.PieceType.PAWN);
+				return new Piece(color, Piece.Type.PAWN);
 			case 'r':
-				return new Piece(color, Game.PieceType.ROOK);
+				return new Piece(color, Piece.Type.ROOK);
 			case 'n':
-				return new Piece(color, Game.PieceType.KNIGHT);
+				return new Piece(color, Piece.Type.KNIGHT);
 			case 'b':
-				return new Piece(color, Game.PieceType.BISHOP);
+				return new Piece(color, Piece.Type.BISHOP);
 			case 'q':
-				return new Piece(color, Game.PieceType.QUEEN);
+				return new Piece(color, Piece.Type.QUEEN);
 			case 'k':
-				return new Piece(color, Game.PieceType.KING);
+				return new Piece(color, Piece.Type.KING);
 			default:
 				return null;
 		}
@@ -67,13 +64,13 @@ public class Piece {
 		this.passable = other.passable;
 	}
 
-	public Piece(Game.Color c, Game.PieceType type){
+	public Piece(int color, Piece.Type type){
 		this.type = type;
-		this.color = c;
+		this.color = color;
 
 		int[] unicodeChars;
 
-		if (color.equals(Game.Color.BLACK) || Game.useDarkChars)
+		if (color == Color.BLACK || Game.useDarkChars)
 			unicodeChars = new int[]{9823,9820,9822,9821,9819,9818};
 		else unicodeChars = new int[]{9817,9814,9816,9815,9813,9812};
 
@@ -113,17 +110,17 @@ public class Piece {
 				
 				break;
 		}
-		if (c.equals(Game.Color.WHITE))
+		if (color == Color.WHITE)
 			this.symbol = this.symbol.toLowerCase();
 	}
 
 	/**
-	*	Determines whether or not the piece is of Game.PieceType t
+	*	Determines whether or not the piece is of Piece.Type t
 	*
 	*	@param t The type to check
 	*	@return Whether the piece has a type of t
 	*/
-	public boolean ofType(Game.PieceType t){
+	public boolean ofType(Piece.Type t){
 		return type.equals(t);
 	}
 
@@ -160,5 +157,159 @@ public class Piece {
 	@Override
 	public String toString(){
 		return ((Game.unicode)?unicodeSymbol:symbol);
+	}
+
+
+
+
+
+
+
+
+
+	/* 				BYTE-BOARD REWRITE */
+
+	public enum Type {PAWN, ROOK, KNIGHT, BISHOP, QUEEN, KING, NONE}
+
+	public static final byte NONE = 0x0;
+
+	public static final byte PAWN = 0x1;
+	public static final byte ROOK = 0x2;
+	public static final byte KING = 0x3;
+	public static final byte QUEEN = 0x4;
+	public static final byte BISHOP = 0x5;
+	public static final byte KNIGHT = 0x6;
+
+	public static final byte BLACK = 0x8;
+
+	// White pieces are 0x1 - 0x6 = default piece values
+	// Black pieces are 0x9 - 0xE = <value> | 0x8 = <value>|BLACK
+
+
+	public static byte synth(char character){
+		byte p;
+		switch (Character.toLowerCase(character)) {
+			case 'p':
+				p = PAWN;
+				break;
+			case 'r':
+				p = ROOK;
+				break;
+			case 'n':
+				p = KNIGHT;
+				break;
+			case 'b':
+				p = BISHOP;
+				break;
+			case 'q':
+				p = QUEEN;
+				break;
+			case 'k':
+				p = KING;
+				break;
+			default:
+				return NONE;
+		}
+		return Character.isUpperCase(character) ? blk(p) : p;
+	}
+	
+	public static byte blk(byte b){
+		return (byte)(b|BLACK);
+	}
+	public static boolean isw(byte b){
+		return b < 0x7;
+	}
+	public static boolean isb(byte b){
+		return b >= 0x8;
+	}
+	public static int color(byte b){
+		return b < 0x7 ? Color.WHITE : Color.BLACK;
+	}
+
+	public static int value(byte b){
+		switch (b){
+			case PAWN:
+			case 0x9:
+				return 2;
+			case KNIGHT:
+			case 0xE:
+				return 4;
+			case BISHOP:
+			case 0xD:
+				return 4;
+			case ROOK:
+			case 0x10:
+				return 6;
+			case QUEEN:
+			case 0xB:
+				return 10;
+			case KING:
+			case 0x11:
+				return 15;
+			default:
+				return 0;
+		}
+	}
+	public static Piece.Type type(byte b){
+		switch (b){
+			case PAWN:
+			case 0x9:
+				return Piece.Type.PAWN;
+			case KNIGHT:
+			case 0xE:
+				return Piece.Type.KNIGHT;
+			case BISHOP:
+			case 0xD:
+				return Piece.Type.BISHOP;
+			case ROOK:
+			case 0x10:
+				return Piece.Type.ROOK;
+			case QUEEN:
+			case 0xB:
+				return Piece.Type.QUEEN;
+			case KING:
+			case 0x11:
+				return Piece.Type.KING;
+			default:
+				return Piece.Type.NONE;
+		}
+	}
+
+	public static String symbol(byte b){
+		return symbol(b, true);
+	}
+	public static String symbol(byte b, boolean u){
+		switch (b){
+			case PAWN:
+				return u?new String(Character.toChars(9817)):"p";
+			case 0x9:
+				return u?new String(Character.toChars(9823)):"P";
+			case KNIGHT:
+				return u?new String(Character.toChars(9814)):"n";
+			case 0xE:
+				return u?new String(Character.toChars(9820)):"N";
+			case BISHOP:
+				return u?new String(Character.toChars(9816)):"b";
+			case 0xD:
+				return u?new String(Character.toChars(9822)):"B";
+			case ROOK:
+				return u?new String(Character.toChars(9815)):"r";
+			case 0x10:
+				return u?new String(Character.toChars(9821)):"R";
+			case QUEEN:
+				return u?new String(Character.toChars(9813)):"q";
+			case 0xB:
+				return u?new String(Character.toChars(9819)):"Q";
+			case KING:
+				return u?new String(Character.toChars(9812)):"k";
+			case 0x11:
+				return u?new String(Character.toChars(9818)):"K";
+			default:
+				return " ";
+		}
+	}
+
+	public static int dir(byte b){
+		return isw(b) ? 1 : -1;
 	}
 }

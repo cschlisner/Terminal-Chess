@@ -3,13 +3,9 @@ package uniChess;
 import android.os.AsyncTask;
 
 import java.io.PrintStream;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Random;
-
-import java.lang.Thread;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.List;
 
 
 /**
@@ -19,7 +15,7 @@ public class Chesster <T> extends Player <T> {
     private Game game;
 
     /** Determines amount of layers to calculate */
-    public int AI_DEPTH = 3;
+    public int AI_DEPTH = 4;
 
     /** Relative weight of material **/
     public int MATERIAL_WEIGHT = 3;
@@ -189,9 +185,9 @@ class SmartMove extends Move implements Comparable<SmartMove>{
 
         /** returns absolute distance from target location (opposite king for normal pieces, default king position for king pieces) */
         public double getDistanceToTarget(Location location){
-            if (!this.movingPiece.type.equals(Game.PieceType.KING))
-                return this.board.getDistanceFromKing(Game.getOpposite(this.movingPiece.color), location);
-            else return this.board.getDistanceFromLocation(location, (this.movingPiece.color.equals(Game.Color.WHITE) ? new Location(4,0) : new Location(4,7)));
+            if (!this.piece.type.equals(Game.PieceType.KING))
+                return this.board.getDistanceFromKing(Game.getOpposite(this.piece.color), location);
+            else return this.board.getDistanceFromLocation(location, (this.piece.color.equals(Game.Color.WHITE) ? new Location(4,0) : new Location(4,7)));
         }
 
         public double calculateStrategicValue(){

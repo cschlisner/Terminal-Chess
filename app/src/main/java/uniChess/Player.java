@@ -1,7 +1,5 @@
 package uniChess;
 
-import java.util.List;
-import java.util.ArrayList;
 import java.util.Scanner;
 
 /**
@@ -15,11 +13,11 @@ public class Player <T> {
     public boolean draw;
 
     /** The color of piece that the Player can move.*/
-    public Game.Color color;
+    public int color;
 
-    public Player(T id, Game.Color c){
+    public Player(T id, int color){
     	this.IDENTIFIER = id;
-    	this.color = c;
+    	this.color = color;
     }
 
     public void registerGame(Game game){

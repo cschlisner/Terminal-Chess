@@ -14,10 +14,6 @@ public class Game implements Serializable {
 	public enum GameEvent {OK, AMBIGUOUS, INVALID, ILLEGAL, CHECK, CHECKMATE, STALEMATE, DRAW}
 	
 	/** Type of game pieces. */
-	public enum PieceType {PAWN, ROOK, KNIGHT, BISHOP, QUEEN, KING}
-	
-	/** Colors */
-	public enum Color {WHITE, BLACK}
 
 	/** Enables unicode output in string representations. */
 	public static boolean unicode = true;
@@ -26,7 +22,7 @@ public class Game implements Serializable {
 	public static boolean useDarkChars = false;
 
 	/** Outputs GameException stacktrace to stdout. */
-	public static boolean logging = false;
+	public static boolean logging = true;
 
 	private boolean whiteMove = true;
 
@@ -56,8 +52,8 @@ public class Game implements Serializable {
 	*	before the game starts.
 	*/
 	public Game(Player player1, Player player2, String gameString){
-		white = (player1.color.equals(Color.WHITE) ? player1 : player2);
-		black = (player1.color.equals(Color.WHITE) ? player2 : player1);
+		white = (player1.color == Color.WHITE) ? player1 : player2;
+		black = (player1.color == Color.WHITE) ? player2 : player1;
 		white.registerGame(this);
 		black.registerGame(this);
 
@@ -88,8 +84,8 @@ public class Game implements Serializable {
 	*	@param player2 The second player
 	*/
 	public Game(Player player1, Player player2){
-		white = (player1.color.equals(Color.WHITE) ? player1 : player2);
-		black = (player1.color.equals(Color.WHITE) ? player2 : player1);
+		white = (player1.color == Color.WHITE) ? player1 : player2;
+		black = (player1.color == Color.WHITE) ? player2 : player1;
 		white.registerGame(this);
 		black.registerGame(this);
 
@@ -159,18 +155,8 @@ public class Game implements Serializable {
 	*	@param color The color to get the player for
 	*	@return The player controlling the given color.
 	*/
-	public Player getPlayer(Color color){
-		return color.equals(Color.BLACK) ? black : white;
-	}
-
-	/**
-	*	Returns the opposite of a given color.
-	*
-	*	@param c The opposite of the desired color
-	*	@return The opposite of the supplied color
-	*/
-	public static Color getOpposite(Color c){
-		return (c.equals(Color.BLACK) ? Color.WHITE : Color.BLACK);
+	public Player getPlayer(int color){
+		return (color == Color.BLACK) ? black : white;
 	}
 
 	/**
@@ -259,13 +245,13 @@ public class Game implements Serializable {
 
 			lastMove = move;
 
-			if (Board.playerHasCheck(getCurrentBoard(), getDormantPlayer()) && getCurrentBoard().getLegalMoves(getCurrentPlayer()).isEmpty())
+			if (getCurrentBoard().playerHasCheck(getDormantPlayer()) && getCurrentBoard().getLegalMoves(getCurrentPlayer()).isEmpty())
 				return GameEvent.CHECKMATE;
 
 			else if (getCurrentBoard().getLegalMoves(getCurrentPlayer()).isEmpty()) // This is a stalemate, which results in Draw
 				return GameEvent.DRAW;
 
-			else if (Board.playerHasCheck(getCurrentBoard(), getDormantPlayer()))
+			else if (getCurrentBoard().playerHasCheck(getDormantPlayer()))
 				return GameEvent.CHECK;
 		} catch (GameException ge){
 				if (logging)

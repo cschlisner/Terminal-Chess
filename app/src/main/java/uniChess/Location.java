@@ -12,6 +12,13 @@ public class Location {
 		this.y = y;
 	}
 
+	/**
+	 * Returns location translated from state array coordinates i.e. x->x y->7-y
+	 */
+	public static Location fromState(int x, int y){
+		return new Location(x, 7-y);
+	}
+
 	public Location(String in) throws GameException {
 		try {
 			in = in.toLowerCase();

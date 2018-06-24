@@ -18,7 +18,7 @@ public class Move{
 	
 	public Board board, sim = null;
 
-	public Piece movingPiece;
+	public byte piece;
 
 	/** Value of the piece this move would capture*/
     public double materialValue;
@@ -28,7 +28,7 @@ public class Move{
 		origin = a;
 		destination = b;
 		board = bo;
-		movingPiece = bo.getTile(origin).getOccupator();
+		piece = bo.getTile(origin);
 	}
 
 	public Move(Move m){
@@ -41,7 +41,7 @@ public class Move{
 		this.destination = m.destination;
 		this.board = m.board;
 		this.sim = (m.sim!=null) ? m.sim : null;
-		this.movingPiece = m.movingPiece;
+		this.piece = m.piece;
 		this.materialValue = m.materialValue;
 	}
 
@@ -73,11 +73,11 @@ public class Move{
 	*	@throws GameException
 	*
 	**/
-	public static Move parseMove(Board board, Game.Color color, String in) throws GameException{
+	public static Move parseMove(Board board, int color, String in) throws GameException{
     	if (in.equals("0-0"))
-    		in = (color.equals(Game.Color.BLACK) ? "kg8":"kg1");
+    		in = (color == Color.BLACK) ? "kg8":"kg1";
     	else if (in.equals("0-0-0"))
-    		in = (color.equals(Game.Color.BLACK) ? "kc8":"kc1");
+    		in = (color == Color.BLACK) ? "kc8":"kc1";
     	
     	else if (in.length() == 2)
     		in = "p"+in;
@@ -121,31 +121,38 @@ public class Move{
 		}
 	// System.out.format("pieceSymbol: %s\ndest: %s\n", pieceSymbol, dest);
 
-		List<Board.Tile> potentialLocations = new ArrayList<>();
+		List<Move> potentialMoves = new ArrayList<>();
 
-		for (Board.Tile t : board.getTileList()){
-			
-			Piece p = t.getOccupator();
+		Location ploc;
+		for (int y = 0; y < 8; ++y){
+			for (int x = 0; x < 8; ++x){
+                ploc = new Location(x,y);
+                byte p = board.getTile(ploc);
+                System.out.println(Piece.symbol(p)+" : "+ploc+" "+dest);
 
-			if (p == null || !p.color.equals(color))
-				continue;
-			
-			if (p.ofType(pieceSymbol) && board.isValidMove(new Move(t.getLocale(), dest, board))){
-				if (((rank < 0 ^ t.getLocale().y == rank)) && ((file < 0 ^ t.getLocale().x == file))) // if the rank or file have been specified, add only matching pieces
-					potentialLocations.add(t);
-			}
+                if (p == Piece.NONE || Piece.color(p) != color ||
+                        !Piece.symbol(p,false).equals(pieceSymbol)) {
+                    continue;
+                }
+                Move pmove = new Move(ploc, dest, board);
+                System.out.println(pmove+" : "+ploc+" "+dest);
+                if (board.isValidMove(pmove)){
+                    if (((rank < 0 ^ ploc.y == rank)) && ((file < 0 ^ ploc.x == file))) // if the rank or file have been specified, add only matching pieces
+                    {
+                        potentialMoves.add(pmove);
+                    }
+                }
+            }
+        }
+
+		if (potentialMoves.size() == 1){
+			return potentialMoves.get(0);
 		}
 
-		if (potentialLocations.size() == 1){
-			Move m = new Move(potentialLocations.get(0).getLocale(), dest, board);
-			board.isValidMove(m); // adds special move flags
-			return m;
-		}
-
-		if (potentialLocations.size() < 1)
+		if (potentialMoves.size() < 1)
 			throw new GameException(GameException.INVALID_MOVE, "Invalid move.");
 
-		if (potentialLocations.size() > 1){
+		if (potentialMoves.size() > 1){
 			throw new GameException(GameException.AMBIGUOUS_MOVE, "yep");
 		}
 		return null;
@@ -157,12 +164,12 @@ public class Move{
 	public String getANString(){
 		if (KCASTLE) return ("0-0");
 		if (QCASTLE) return ("0-0-0");
-		return String.format("%s%s%s", board.getTile(origin).getOccupator().getSymbol(false).toLowerCase(), origin, destination);
+		return String.format("%s%s%s", Piece.symbol(board.getTile(origin), false).toLowerCase(), origin, destination);
 	}
 
     @Override
 	public String toString(){
-		return String.format("%s > %s%s", board.getTile(origin).getOccupator(), (materialValue>0 ? board.getTile(destination).getOccupator() : ""), destination);
+		return String.format("%s > %s%s", Piece.symbol(board.getTile(origin)), (materialValue>0 ? Piece.symbol(board.getTile(destination)) : ""), destination);
 	}
 
 }

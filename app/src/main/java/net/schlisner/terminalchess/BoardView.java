@@ -249,11 +249,11 @@ public class BoardView extends View {
                 td.monochrome = isIcon;
     }
 
-    public void updateValidMoves(Game.Color color){
+    public void updateValidMoves(int color){
         List<TileDisplay> validDestinations = new ArrayList<>();
         for (TileDisplay[] tda : tileDisplays){
             for (TileDisplay td : tda){
-                if (td.tile.getOccupator() != null && !td.tile.available(color)){
+                if (td.tile.getOccupator() != null && !gameBoard.available(td.tile.getLocale(), color)){
                     validDestinations.clear();
                     for (Move move : gameBoard.getLegalMoves(td.tile.getOccupator().color))
                         if (move.origin.equals(td.tile.getLocale()))

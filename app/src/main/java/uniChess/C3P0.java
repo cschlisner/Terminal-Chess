@@ -1,23 +1,17 @@
 package uniChess;
 
-import java.io.PrintStream;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Random;
-
-import java.lang.Thread;
 
 
 /**
 *   An object representing a Simulated Player in a chess game. 
 */
 public class C3P0 <T> extends Player <T> {
-    private int searchDepth = 1;
+    private int searchDepth = 3;
 
     private Game game;
 
-    public C3P0(T id, Game.Color c){
+    public C3P0(T id, int c){
         super(id, c);
     }
 
@@ -43,51 +37,41 @@ public class C3P0 <T> extends Player <T> {
 //        System.out.println("Legal:\n"+legal);
         for (Move m : legal){
 //            System.out.println("Analyzing: "+m);
-            double v = minimax(m, searchDepth, Double.MIN_VALUE, Double.MAX_VALUE, this.color);
+            double v = negamax(m.getSimulation(), searchDepth, -1000000.0, 100000000.0, this.color);
             if (best == null || v > best_mm) {
                 best = m;
                 best_mm = v;
             }
         }
 
-//        System.out.println("Best move: "+best);
+        System.out.println("Best move: "+best.getANString());
         long t2 = System.currentTimeMillis();
         System.out.println("Move Generated in: "+(t2-t1)+"ms");
         return best.getANString();
     }
 
-    private double minimax(Move move, int depth, double alpha, double beta, Game.Color color){
+    private double negamax(Board sim, int depth, double alpha, double beta, int color){
+        // $color to move on board $sim
         if (depth == 0){
-            return evaluate(move);
+            double opMaterial = -1 * Math.pow(sim.getMaterialCount(Color.opposite(color)), 2.0);
+
+            return color == Color.BLACK? opMaterial : -1 * opMaterial;
         }
 
-        List<Move> responseMoves = move.getSimulation().getOpponentLegalMoves(color);
+        List<Move> childMoves = sim.getLegalMoves(color);
 
-        if (color.equals(this.color)){
-            double v = Double.MIN_VALUE;
-            for (Move opponentMove : responseMoves){
-                v = Math.max(minimax((opponentMove), depth-1, alpha, beta, Game.getOpposite(color)), v);
-                alpha = Math.max(alpha, v);
-                if (alpha >= beta) break;
-            }
-            return v;
+        double bestValue = -1000000000000000.0;
+        long t0 = System.currentTimeMillis();
+        for (Move move : childMoves){
+            double v = -negamax(move.getSimulation(), depth-1, -beta, -alpha, -color);
+            bestValue = Math.max(bestValue, v);
+            alpha = Math.max(alpha, v);
+            // the best move at this point for $color is worse than a different move for -$color
+            if (alpha >= beta) break;
         }
-        else {
-            double v = Double.MAX_VALUE;
-            for (Move opponentMove : responseMoves){
-                v = Math.min(minimax((opponentMove), depth-1, alpha, beta, Game.getOpposite(color)), v);
-                beta = Math.min(beta, v);
-                if (alpha >= beta) break;
-            }
-            return v;
-        }
-    }
+//        System.out.println("Depth "+depth+" calculated in "+(System.currentTimeMillis()-t0));
 
-    private double evaluate(Move move){
-        //return new Random().nextInt(10);/*
-        if (move.CHECKMATE) return Double.MAX_VALUE;
-        Board sim = move.getSimulation();
-        return (sim.getMaterialCount(this.color) / sim.getMaterialCount(Game.getOpposite(this.color)));//*/
+        return bestValue;
     }
 
 }

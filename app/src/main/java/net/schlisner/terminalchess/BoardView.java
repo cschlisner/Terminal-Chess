@@ -17,6 +17,7 @@ import uniChess.Board;
 import uniChess.Game;
 import uniChess.Location;
 import uniChess.Move;
+import uniChess.Piece;
 import uniChess.Player;
 
 public class BoardView extends View {
@@ -61,7 +62,7 @@ public class BoardView extends View {
 
         FontManager.setFont(getContext(), "seguisym.ttf");
         if (updatemoves) {
-            updateValidMoves(b.iteration %2==0 ? Game.Color.WHITE : Game.Color.BLACK);
+            updateValidMoves(b.iteration %2==0 ? uniChess.Color.WHITE : uniChess.Color.BLACK);
         }
 
         //invalidate();
@@ -75,7 +76,7 @@ public class BoardView extends View {
 //        System.out.format("init_tiles:"+getWidth()+"\n");
         for (int i = 0; i < 8; ++i){
             for (int j = 0; j < 8; ++j){
-                tileDisplays[i][j] = new TileDisplay(getContext(), gameBoard.getTile(i,7-j));
+                tileDisplays[i][j] = new TileDisplay(getContext(), this, new Location(i,j));
                 tileDisplays[i][j].monochrome = monochrome;
             }
         }
@@ -253,10 +254,10 @@ public class BoardView extends View {
         List<TileDisplay> validDestinations = new ArrayList<>();
         for (TileDisplay[] tda : tileDisplays){
             for (TileDisplay td : tda){
-                if (td.tile.getOccupator() != null && !gameBoard.available(td.tile.getLocale(), color)){
+                if (td.getOccupator() != Piece.NONE && !gameBoard.available(td.getLocale(), color)){
                     validDestinations.clear();
-                    for (Move move : gameBoard.getLegalMoves(td.tile.getOccupator().color))
-                        if (move.origin.equals(td.tile.getLocale()))
+                    for (Move move : gameBoard.getLegalMoves(Piece.color(td.getOccupator())))
+                        if (move.origin.equals(td.getLocale()))
                             validDestinations.add(tileDisplays[move.destination.x][7-move.destination.y]);
                     td.setValidDestinations(validDestinations);
                 }
@@ -295,10 +296,10 @@ public class BoardView extends View {
 
             BoardView.this.invalidate();
 
-            return new Move(currentlySelected.tile.getLocale(), selectedTile.tile.getLocale(), gameBoard);
+            return new Move(currentlySelected.getLocale(), selectedTile.getLocale(), gameBoard);
         }
 
-        if (currentlySelected == null || selectedTile.tile.available(player.color))
+        if (currentlySelected == null || gameBoard.available(selectedTile.getLocale(),player.color))
             return null;
 
         currentlySelected.deselect();

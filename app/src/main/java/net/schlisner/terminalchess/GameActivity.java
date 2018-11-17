@@ -27,6 +27,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import uniChess.C3P0;
+import uniChess.Color;
 import uniChess.Game;
 import uniChess.Move;
 import uniChess.Player;
@@ -194,8 +195,8 @@ public class GameActivity extends AppCompatActivity {
             switch (opponentType) {
 
                 case OPPONENT_LOCAL:
-                    playerOne = new Player<>("WHITE", Game.Color.WHITE);
-                    playerTwo = new Player<>("BLACK", Game.Color.BLACK);
+                    playerOne = new Player<>("WHITE", Color.WHITE);
+                    playerTwo = new Player<>("BLACK", Color.BLACK);
                     updateHandler.postDelayed(gameInit, 50);
                     break;
 
@@ -264,8 +265,8 @@ public class GameActivity extends AppCompatActivity {
                                 statusBarUser.setText(!userTurn() ? getString(R.string.waiting_for_opponent) : getString(R.string.waiting_for_player));
                                 drawStatusUser.setVisibility(!userTurn() ? View.INVISIBLE : View.VISIBLE);
 
-                                deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
-                                deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
+                                deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Color.BLACK : Color.WHITE));
+                                deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Color.WHITE : Color.BLACK));
 
                                 boardView.setOnTouchListener(boardTL);
 
@@ -292,10 +293,10 @@ public class GameActivity extends AppCompatActivity {
 //                    userIsWhite = (new Random(System.currentTimeMillis())).nextBoolean();
                     userIsWhite = true;
                     Toast.makeText(getApplicationContext(), String.format("You will be playing as %s", userIsWhite ? "white" : "black"), Toast.LENGTH_SHORT).show();
-                    playerTwo = userIsWhite ? new C3P0<>("BLACK", Game.Color.BLACK)
-                            : new Player<>("BLACK", Game.Color.BLACK);
-                    playerOne = userIsWhite ? new Player<>("WHITE", Game.Color.WHITE)
-                            : new C3P0<>("WHITE", Game.Color.WHITE);
+                    playerTwo = userIsWhite ? new C3P0<>("BLACK", Color.BLACK)
+                            : new Player<>("BLACK", Color.BLACK);
+                    playerOne = userIsWhite ? new Player<>("WHITE", Color.WHITE)
+                            : new C3P0<>("WHITE", Color.WHITE);
                     updateHandler.postDelayed(gameInitAI, 2);
                     break;
             }
@@ -552,7 +553,7 @@ public class GameActivity extends AppCompatActivity {
     View.OnTouchListener boardTL = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent e) {
-            if (chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE) == userIsWhite && v instanceof BoardView) {
+            if ((chessGame.getCurrentPlayer().color == Color.WHITE) == userIsWhite && v instanceof BoardView) {
                 BoardView bV = (BoardView) v;
                 float x = e.getX();
                 float y = e.getY();
@@ -560,7 +561,7 @@ public class GameActivity extends AppCompatActivity {
                     case MotionEvent.ACTION_DOWN:
                         break;
                     case MotionEvent.ACTION_UP:
-                        Move selection = bV.selectTile((int)x, (int)y, userIsWhite ? chessGame.getPlayer(Game.Color.WHITE) : chessGame.getPlayer(Game.Color.BLACK));
+                        Move selection = bV.selectTile((int)x, (int)y, userIsWhite ? chessGame.getPlayer(Color.WHITE) : chessGame.getPlayer(Color.BLACK));
                         if (selection != null){
                             System.out.println("Advancing: "+selection);
                             gameAdvance(selection.getANString(), false);
@@ -653,8 +654,8 @@ public class GameActivity extends AppCompatActivity {
 
 
 
-                deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
-                deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
+                deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Color.BLACK : Color.WHITE));
+                deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(userIsWhite ? Color.WHITE : Color.BLACK));
                 SharedPreferences.Editor e = sharedPref.edit();
                 switch(gameResponse){
                     case CHECK:
@@ -667,8 +668,8 @@ public class GameActivity extends AppCompatActivity {
                         switch (opponentType){
 
                             case OPPONENT_LOCAL:
-                                deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(!userIsWhite ? Game.Color.BLACK : Game.Color.WHITE));
-                                deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(!userIsWhite ? Game.Color.WHITE : Game.Color.BLACK));
+                                deathRowUser.setText(chessGame.getCurrentBoard().displayDeathRow(!userIsWhite ? Color.BLACK : Color.WHITE));
+                                deathRowOpponent.setText(chessGame.getCurrentBoard().displayDeathRow(!userIsWhite ? Color.WHITE : Color.BLACK));
                                 userIsWhite = !userIsWhite;
                                 break;
 
@@ -688,7 +689,7 @@ public class GameActivity extends AppCompatActivity {
 
                             case OPPONENT_AI:
                                 // user just made move
-                                if (userIsWhite ^ chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE)){
+                                if (userIsWhite ^ chessGame.getCurrentPlayer().color == Color.WHITE){
                                     // get response move from ai
                                     gameAdvance((chessGame.getCurrentPlayer()).getMove(), false);
                                 }
@@ -909,6 +910,6 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private boolean userTurn(){
-        return chessGame.getCurrentPlayer().color.equals(Game.Color.WHITE) == userIsWhite;
+        return (chessGame.getCurrentPlayer().color == Color.WHITE) == userIsWhite;
     }
 }

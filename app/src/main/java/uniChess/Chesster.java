@@ -20,7 +20,7 @@ public class Chesster <T> extends Player <T> {
     /** Relative weight of material **/
     public int MATERIAL_WEIGHT = 3;
 
-    public Chesster(T id, Game.Color c){
+    public Chesster(T id, int c){
         super(id, c);
     }
 
@@ -111,17 +111,17 @@ public class Chesster <T> extends Player <T> {
         return best.getANString();
     }
 
-    private double minimax(Move move, int depth, double alpha, double beta, Game.Color color){
+    private double minimax(Move move, int depth, double alpha, double beta, int color){
         if (depth == 0){
             return minmaxevaluate(move);
         }
 
         List<Move> responseMoves = move.getSimulation().getOpponentLegalMoves(color);
 
-        if (color.equals(this.color)){
+        if (color == this.color){
             double v = Double.MIN_VALUE;
             for (Move opponentMove : responseMoves){
-                v = Math.max(minimax((opponentMove), depth-1, alpha, beta, Game.getOpposite(color)), v);
+                v = Math.max(minimax((opponentMove), depth-1, alpha, beta, -color), v);
                 alpha = Math.max(alpha, v);
                 if (alpha >= beta) break;
             }
@@ -130,7 +130,7 @@ public class Chesster <T> extends Player <T> {
         else {
             double v = Double.MAX_VALUE;
             for (Move opponentMove : responseMoves){
-                v = Math.min(minimax((opponentMove), depth-1, alpha, beta, Game.getOpposite(color)), v);
+                v = Math.max(minimax((opponentMove), depth-1, alpha, beta, -color), v);
                 beta = Math.min(beta, v);
                 if (alpha >= beta) break;
             }
@@ -142,7 +142,7 @@ public class Chesster <T> extends Player <T> {
         //return new Random().nextInt(10);/*
         if (move.CHECKMATE) return Double.MAX_VALUE;
         Board sim = move.getSimulation();
-        return (sim.getMaterialCount(this.color) / sim.getMaterialCount(Game.getOpposite(this.color)));//*/
+        return (sim.getMaterialCount(this.color) / sim.getMaterialCount(-this.color));//*/
     }
 
 
@@ -185,9 +185,9 @@ class SmartMove extends Move implements Comparable<SmartMove>{
 
         /** returns absolute distance from target location (opposite king for normal pieces, default king position for king pieces) */
         public double getDistanceToTarget(Location location){
-            if (!this.piece.type.equals(Game.PieceType.KING))
-                return this.board.getDistanceFromKing(Game.getOpposite(this.piece.color), location);
-            else return this.board.getDistanceFromLocation(location, (this.piece.color.equals(Game.Color.WHITE) ? new Location(4,0) : new Location(4,7)));
+            if (!Piece.type(this.piece).equals(Piece.Type.KING))
+                return this.board.getDistanceFromKing(-Piece.color(this.piece), location);
+            else return this.board.getDistanceFromLocation(location, (Piece.color(this.piece) == Color.WHITE) ? new Location(4,0) : new Location(4,7));
         }
 
         public double calculateStrategicValue(){

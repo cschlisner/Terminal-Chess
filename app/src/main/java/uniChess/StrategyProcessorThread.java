@@ -109,7 +109,7 @@ public class StrategyProcessorThread extends Thread {
             SmartMove olsm = new SmartMove(olm);
             opponentSorted.add(olsm);
             if (olm.destination.equals(m.destination))
-                m.tacticalValue = -1.0*m.piece.value;
+                m.tacticalValue = -1.0*Piece.value(m.piece);
             if (olm.materialValue > potCaptureVal)
                 potCaptureVal = olm.materialValue;
         }
@@ -129,6 +129,6 @@ public class StrategyProcessorThread extends Thread {
     }
 
     private Player getOpponent(){
-        return game.getPlayer(Game.getOpposite(chesster.color));
+        return game.getPlayer(-chesster.color);
     }
 }

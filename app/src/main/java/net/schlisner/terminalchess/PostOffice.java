@@ -20,6 +20,7 @@ import cz.msebera.android.httpclient.client.methods.HttpPost;
 import cz.msebera.android.httpclient.impl.client.HttpClients;
 import cz.msebera.android.httpclient.message.BasicNameValuePair;
 import cz.msebera.android.httpclient.util.EntityUtils;
+import uniChess.Color;
 import uniChess.Game;
 import uniChess.Player;
 
@@ -198,8 +199,8 @@ class PostOffice {
 //        long t1 = System.currentTimeMillis();
 
         if (!gameStr.equals(""))
-            g = new Game(new Player<>(whiteID, Game.Color.WHITE), new Player<>(blackID, Game.Color.BLACK), gameStr);
-        else g = new Game(new Player<>(whiteID, Game.Color.WHITE), new Player<>(blackID, Game.Color.BLACK));
+            g = new Game(new Player<>(whiteID, Color.WHITE), new Player<>(blackID, Color.BLACK), gameStr);
+        else g = new Game(new Player<>(whiteID, Color.WHITE), new Player<>(blackID, Color.BLACK));
 
 //        System.out.println("instantiate game : "+(System.currentTimeMillis() - t1));
 

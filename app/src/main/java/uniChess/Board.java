@@ -17,7 +17,7 @@ import java.util.List;
 public class Board {
 
 	/** Board iteration, generated from previous board - same as game move count **/
-	private int iteration;
+	public int iteration;
 
 	private int blackMaterial=0;
 	private int whiteMaterial=0;
@@ -29,8 +29,6 @@ public class Board {
 	private byte[][] state = new byte[8][8];
 
 	private List<Location> enpassentablePawns = new ArrayList<>();
-
-	private Tile[][] tiles = new Tile[8][8];
 
 	private List<Move> legalWhiteMoves;
 	private List<Move> legalBlackMoves;
@@ -787,57 +785,5 @@ public class Board {
         return (t == Piece.NONE || Piece.color(t) != c);
     }
 
-	public class Tile {
-		private Piece occupator = null;
-		private Location locale;
-		public int color;
 
-		public Tile(Location loc){
-			locale = loc;
-			occupator = null;
-			color = ((loc.x+loc.y)%2==0)?Color.BLACK:Color.WHITE;
-		}
-
-		public Tile(Tile org){
-			this.locale = org.locale;
-			if (org.occupator != null)
-				this.setOccupator(new Piece(org.occupator));
-			this.color = org.color;
-		}
-
-		/**
-		*	@return The location of this Tile
-		*/
-		public Location getLocale(){	
-			return locale;
-		}
-		
-		/**
-		*	@return The occupator of this Tile
-		*/
-		public Piece getOccupator(){
-			return occupator;
-		}
-
-
-
-
-		/**
-		*	Sets the occupator of this Tile to a Piece
-		*
-		*	@param p The piece to use as the new occupator
-		*/
-		public void setOccupator(Piece p){
-			occupator = p;
-		}
-
-		/**
-		*	Returns a String representation of this Tile, including the 'color' of the tile and 
-		*	any occupants (using the Game setting for unicode).
-		*/
-		@Override
-		public String toString(){
-			return " "+(((occupator!=null)?occupator.getSymbol():(color == Color.BLACK)? (Game.unicode?"\u00B7":"-"):" "))+" ";
-		}
-	}
 }

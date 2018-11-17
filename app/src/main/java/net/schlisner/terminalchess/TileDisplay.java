@@ -12,6 +12,8 @@ import java.util.List;
 
 import uniChess.Board;
 import uniChess.Game;
+import uniChess.Location;
+import uniChess.Piece;
 
 /**
  * Created by cschl_000 on 7/4/2016.
@@ -21,7 +23,11 @@ public class TileDisplay {
     public boolean animating=false;
     public float cy = -1, cx = -1;
 
-    public Board.Tile tile;
+    private BoardView parent;
+    private Location location;
+    private int color;
+
+    public byte piece;
 
     public boolean monochrome = true;
 
@@ -40,23 +46,33 @@ public class TileDisplay {
     public boolean selected, capture;
 
 
-    public TileDisplay(Context context, Board.Tile tile){
-        this.tile = tile;
+    public TileDisplay(Context context, BoardView parent, Location location){
+        this.parent = parent;
+        this.location = location;
+        this.color = ((location.x+location.y)%2==0)?uniChess.Color.BLACK:uniChess.Color.WHITE;
 
         tilePaint.setStyle(Paint.Style.STROKE);
         tilePaint.setAntiAlias(true);
         piecePaint.setAntiAlias(true);
         tileColor = ContextCompat.getColor(context, R.color.chessBoardLight);
-        fillColor = (tile.color.equals(Game.Color.BLACK)) ? ContextCompat.getColor(context, R.color.chessBoardDark): ContextCompat.getColor(context, R.color.chessBoardLight);
+        fillColor = (color == Color.BLACK) ? ContextCompat.getColor(context, R.color.chessBoardDark): ContextCompat.getColor(context, R.color.chessBoardLight);
         chessBoardHighlight = ContextCompat.getColor(context, R.color.chessBoardHighlight);
         chessBoardCapture = ContextCompat.getColor(context, R.color.chessBoardCapture);
 
         piecePaint.setTypeface(FontManager.getTypeFace());
         piecePaint.setColor(Color.WHITE);
-        if (tile.getOccupator() != null){
-            pieceColor = ContextCompat.getColor(context, tile.getOccupator().color.equals(Game.Color.BLACK) ? R.color.chessPiecesDark : R.color.chessPiecesLight);
+        if (getOccupator() != Piece.NONE){
+            pieceColor = ContextCompat.getColor(context, Piece.isb(getOccupator()) ? R.color.chessPiecesDark : R.color.chessPiecesLight);
             piecePaint.setColor(pieceColor);
         }
+    }
+
+    public byte getOccupator(){
+        return parent.gameBoard.getTile(location);
+    }
+
+    public Location getLocale(){
+        return location;
     }
 
     public void select(){
@@ -64,7 +80,7 @@ public class TileDisplay {
 
         for (TileDisplay td : validDestinations) {
             td.selected = true;
-            if (td.tile.getOccupator() != null)
+            if (td.getOccupator() != Piece.NONE)
                 td.capture = true;
         }
     }
@@ -122,7 +138,7 @@ public class TileDisplay {
 
         // selection lines if applicable
         if (!monochrome && selected) {
-            tilePaint.setColor((tile.getOccupator() != null) ? (capture ? chessBoardCapture : Color.LTGRAY) : chessBoardHighlight);
+            tilePaint.setColor((getOccupator() != Piece.NONE) ? (capture ? chessBoardCapture : Color.LTGRAY) : chessBoardHighlight);
             tilePaint.setStrokeWidth(5);
             canvas.drawRect(x + sw-2, y + sw-2, x + dimensions - sw+2, y + dimensions - sw+2, tilePaint);
         }
@@ -140,8 +156,8 @@ public class TileDisplay {
             cy = y+dimensions-(0.2f*dimensions);
         }
 
-        if (tile.getOccupator() != null) {
-            canvas.drawText(tile.getOccupator().getSymbol(), cx, cy, piecePaint);
+        if (getOccupator() != Piece.NONE) {
+            canvas.drawText(Piece.symbol(getOccupator()), cx, cy, piecePaint);
         }
     }
 }
